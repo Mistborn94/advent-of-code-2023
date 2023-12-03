@@ -1,37 +1,42 @@
-package template
+package day3
 
 import helper.Debug
 import helper.readDayFile
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@Ignore //Ignore Class
-internal class DayTKtTest {
 
-    private val day = 0
+internal class Day3KtTest {
+
+    private val day = 3
 
     @Test
     fun sample1() {
         val text = """
-            |
+            |467..114..
+...*......
+..35..633.
+......#...
+617*......
+.....+.58.
+..592.....
+......755.
+...${'$'}.*....
+.664.598..
         """.trimMargin().trimEnd()
 
-        assertEquals(0, solveA(text, Debug.Enabled))
-        assertEquals(0, solveB(text, Debug.Enabled))
+        assertEquals(4361, solveA(text, Debug.Disabled))
+        assertEquals(467835, solveB(text, Debug.Disabled))
     }
 
     @Test
-    @Ignore
     fun sample2() {
-//        val text = readDayFile(day, "sample2.in").readText().trimEnd()
-
         val text = """
-            |
+            |123+
+            |$456
         """.trimMargin().trimEnd()
 
-        assertEquals(0, solveA(text, Debug.Enabled))
-        assertEquals(0, solveB(text, Debug.Disabled))
+        assertEquals(579, solveA(text, Debug.Disabled))
     }
 
     @Test
@@ -40,10 +45,10 @@ internal class DayTKtTest {
 
         val solveA = solveA(lines)
         println("A: $solveA")
-        assertEquals(0, solveA)
+        assertEquals(531561, solveA)
 
         val solveB = solveB(lines)
         println("B: $solveB")
-        assertEquals(0, solveB)
+        assertEquals(83279367, solveB)
     }
 }
