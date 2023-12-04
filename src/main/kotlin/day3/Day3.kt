@@ -111,14 +111,8 @@ fun solveB(text: String, debug: Debug = Debug.Disabled): Int {
         }
     }
 
-    val partsWithStars = parts.filter { part ->
-        val possibleSymbols = part.possibleSymbols
-        debug{ println("Possible symbols for $part is $possibleSymbols")}
-        possibleSymbols.any { it in stars }
-    }
-
     val gears = stars.sumOf { star ->
-        val adjacentParts = partsWithStars.filter { it.possibleSymbols.contains(star) }
+        val adjacentParts = parts.filter { it.possibleSymbols.contains(star) }
         if (adjacentParts.size == 2) {
             adjacentParts[0].value * adjacentParts[1].value
         } else {
