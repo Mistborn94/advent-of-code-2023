@@ -51,21 +51,8 @@ humidity-to-location map:
 
         """.trimMargin().trimEnd()
 
-        assertEquals(35, solveA(text, Debug.Enabled))
-        assertEquals(46, solveB(text, Debug.Enabled))
-    }
-
-    @Test
-    @Ignore
-    fun sample2() {
-//        val text = readDayFile(day, "sample2.in").readText().trimEnd()
-
-        val text = """
-            |
-        """.trimMargin().trimEnd()
-
-        assertEquals(214922730, solveA(text, Debug.Enabled))
-        assertEquals(0, solveB(text, Debug.Disabled))
+        assertEquals(35, solveA(text, Debug.Disabled))
+        assertEquals(46, solveB(text, Debug.Disabled))
     }
 
     @Test
@@ -76,7 +63,7 @@ humidity-to-location map:
         println("A: $solveA")
         assertEquals(214922730, solveA)
 
-        val solveB = solveB(lines)
+        val solveB = solveB(lines, Debug.Disabled)
         println("B: $solveB")
         assertEquals(148041808, solveB)
     }

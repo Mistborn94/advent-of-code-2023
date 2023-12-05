@@ -1,5 +1,6 @@
 package day5
 
+import helper.CompositeLongRange
 import helper.Debug
 
 val seedsRegex = "seeds: ([\\d ]+)".toRegex()
@@ -28,19 +29,42 @@ private fun categoryMappings(chunks: List<String>) = chunks.drop(1).map { chunk 
     val (source, destination) = mapTitle.matchEntire(lines[0])!!.destructured
     val ranges = lines.drop(1).map { line ->
         val split = line.split(" ").map { it.toLong() }
-        CategoryRange(split[0], split[1], split[2])
-    }
+        CategoryRange(split[1], split[0], split[2])
+    }.sorted()
     CategoryMapping(source, destination, ranges)
 }
 
-data class CategoryRange(val destination: Long, val sourceStart: Long, val range: Long) {
-    private val sourceRange = sourceStart until (sourceStart + range)
+val rangeComparator: Comparator<CategoryRange> =
+    compareBy<CategoryRange> { it.source }.thenComparing<Long> { it.destination }.thenComparing<Long> { it.range }
+
+data class CategoryRange(val source: Long, val destination: Long, val range: Long) : Comparable<CategoryRange> {
+    private val sourceRange = source until (source + range)
+    private val offset = destination - source
 
     operator fun contains(source: Long) = sourceRange.contains(source)
 
     fun map(sourceValue: Long): Long {
-        val offset = sourceValue - sourceStart
+        val offset = sourceValue - source
         return destination + offset
+    }
+
+    override fun compareTo(other: CategoryRange): Int = rangeComparator.compare(this, other)
+
+    fun mapRange(startRange: CompositeLongRange): Pair<CompositeLongRange,CompositeLongRange> {
+        val overlap = startRange.overlap(sourceRange)
+
+        return if (overlap.isEmpty()) {
+            startRange to CompositeLongRange.EMPTY
+        } else {
+            val remainder = startRange.minus(sourceRange)
+            val mapped = overlap.shift(offset)
+            if (remainder.isEmpty()) {
+                CompositeLongRange.EMPTY to mapped
+            } else {
+                remainder to mapped
+            }
+        }
+
     }
 }
 
@@ -49,6 +73,14 @@ data class CategoryMapping(val source: String, val destination: String, val rang
     fun map(sourceValue: Long): Long {
         val mapping = ranges.find { sourceValue in it }
         return mapping?.map(sourceValue) ?: sourceValue
+    }
+
+    fun mapRange(startRange: CompositeLongRange): CompositeLongRange {
+        val (unmapped, mapped) = ranges.fold(startRange to CompositeLongRange.EMPTY) { (unmappedAcc, mappedAcc), categoryMapping ->
+            val (unmappedNew, mappedNew) = categoryMapping.mapRange(unmappedAcc)
+            unmappedNew to (mappedAcc + mappedNew)
+        }
+        return unmapped + mapped
     }
 }
 
@@ -62,15 +94,15 @@ fun solveB(text: String, debug: Debug = Debug.Disabled): Long {
 
     val categories = categoryMappings(chunks)
 
-    return seedRanges.parallelStream().mapToLong { seeds ->
+    return seedRanges.minOf { seeds ->
+        debug { println("=====================================") }
         debug { println("Starting range $seeds") }
-        seeds.minOf { seed ->
-            debug { println("=============================") }
-            categories.fold(seed) { acc, categoryMapping ->
-                val map = categoryMapping.map(acc)
-                debug { println("Mapped $acc ${categoryMapping.source} to $map ${categoryMapping.destination}") }
-                map
-            }
-        }
-    }.min().asLong
+        val first = categories.fold(CompositeLongRange(seeds)) { acc, categoryMapping ->
+            val mappedRange = categoryMapping.mapRange(acc)
+            debug { println("Mapped  ${categoryMapping.source} to ${categoryMapping.destination}: $acc => $mappedRange") }
+            mappedRange
+        }.first()
+        debug { println("First is $first") }
+        first
+    }
 }
