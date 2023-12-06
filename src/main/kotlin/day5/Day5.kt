@@ -54,12 +54,12 @@ data class CategoryRange(val source: Long, val destination: Long, val range: Lon
         val overlap = startRange.overlap(sourceRange)
 
         return if (overlap.isEmpty()) {
-            startRange to CompositeLongRange.EMPTY
+            startRange to CompositeLongRange.emptyLongRange
         } else {
             val remainder = startRange.minus(sourceRange)
             val mapped = overlap.shift(offset)
             if (remainder.isEmpty()) {
-                CompositeLongRange.EMPTY to mapped
+                CompositeLongRange.emptyLongRange to mapped
             } else {
                 remainder to mapped
             }
@@ -76,12 +76,14 @@ data class CategoryMapping(val source: String, val destination: String, val rang
     }
 
     fun mapRange(startRange: CompositeLongRange): CompositeLongRange {
-        val (unmapped, mapped) = ranges.fold(startRange to CompositeLongRange.EMPTY) { (unmappedAcc, mappedAcc), categoryMapping ->
+        val (unmapped, mapped) = ranges.fold(startRange to CompositeLongRange.emptyLongRange) { (unmappedAcc, mappedAcc), categoryMapping ->
             val (unmappedNew, mappedNew) = categoryMapping.mapRange(unmappedAcc)
             unmappedNew to (mappedAcc + mappedNew)
         }
         return unmapped + mapped
     }
+
+
 }
 
 
@@ -93,11 +95,12 @@ fun solveB(text: String, debug: Debug = Debug.Disabled): Long {
         .map { (a, b) -> a until a + b }
 
     val categories = categoryMappings(chunks)
+    debug { println("Categories are ${categories.joinToString(separator = "\n")}") }
 
     return seedRanges.minOf { seeds ->
         debug { println("=====================================") }
         debug { println("Starting range $seeds") }
-        val first = categories.fold(CompositeLongRange(seeds)) { acc, categoryMapping ->
+        val first = categories.fold(CompositeLongRange.newLongRange(seeds)) { acc, categoryMapping ->
             val mappedRange = categoryMapping.mapRange(acc)
             debug { println("Mapped  ${categoryMapping.source} to ${categoryMapping.destination}: $acc => $mappedRange") }
             mappedRange
