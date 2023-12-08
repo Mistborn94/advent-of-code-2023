@@ -24,7 +24,7 @@ GGG = (GGG, GGG)
 ZZZ = (ZZZ, ZZZ)
         """.trimMargin().trimEnd()
 
-        assertEquals(2, solveA(text, Debug.Enabled, "AAA"))
+        assertEquals(2, solveA(text, Debug.Enabled))
 
     }
 
@@ -51,7 +51,7 @@ XXX = (XXX, XXX)
     fun solve() {
         val lines = readDayFile(day, "input").readText().trimEnd()
 
-        val solveA = solveA(lines, startingNode = "AAA")
+        val solveA = solveA(lines)
         println("A: $solveA")
         assertEquals(17263, solveA)
 

@@ -3,7 +3,7 @@ package day8
 import helper.Debug
 import helper.lowestCommonMultiple
 
-val regex = "([0-9A-Z]+) = \\(([0-9A-Z]+), ([0-9A-Z]+)\\)".toRegex()
+private val regex = "([0-9A-Z]+) = \\(([0-9A-Z]+), ([0-9A-Z]+)\\)".toRegex()
 fun solveA(
     text: String,
     debug: Debug = Debug.Disabled,
