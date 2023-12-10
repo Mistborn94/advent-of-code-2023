@@ -3,14 +3,15 @@ package helper
 class CompositeRange<T : Comparable<T>>(
     ranges: List<ClosedRange<T>> = emptyList(),
     private val adder: (T, Long) -> T,
-    private val factory: (T, T) -> ClosedRange<T> = { a, b -> a..b }
+    private val factory: (T, T) -> ClosedRange<T> = { a, b -> a..b },
+    private val size: (ClosedRange<T>) -> Long
 ) {
 
     private val ranges: List<ClosedRange<T>> = simplify(ranges)
 
     private operator fun T.plus(steps: Long) = adder(this, steps)
     private operator fun T.minus(steps: Long) = adder(this, -steps)
-    private fun compositeRange(ranges: List<ClosedRange<T>>): CompositeRange<T> = CompositeRange(ranges, adder, factory)
+    private fun compositeRange(ranges: List<ClosedRange<T>>): CompositeRange<T> = CompositeRange(ranges, adder, factory, size)
 
     private fun simplify(ranges: List<ClosedRange<T>>): List<ClosedRange<T>> {
         if (ranges.size <= 1) {
@@ -95,6 +96,7 @@ class CompositeRange<T : Comparable<T>>(
 
     fun first() = ranges.first().start
     fun isEmpty(): Boolean = ranges.isEmpty() || ranges.all { it.isEmpty() }
+    fun size() = ranges.sumOf { size(it) }
 
     override fun toString(): String = ranges.joinToString(prefix = "[", postfix = "]", separator = ",")
 
@@ -147,17 +149,19 @@ class CompositeRange<T : Comparable<T>>(
     companion object CompositeLongRange {
         private val longRangeFactory: (Long, Long) -> LongRange = { a, b -> a..b }
         private val longAdder: (Long, Long) -> Long = { a, b -> a + b }
+        private val longSize: (ClosedRange<Long>) -> Long = { it.endInclusive - it.start + 1 }
 
         private val intRangeFactory: (Int, Int) -> IntRange = { a, b -> a..b }
         private val intAdder: (Int, Long) -> Int = { a, b -> a + b.toInt() }
+        private val intSize: (ClosedRange<Int>) -> Long = { it.endInclusive - it.start + 1L }
 
-        val emptyLongRange: CompositeRange<Long> by lazy { CompositeRange(emptyList(), longAdder, longRangeFactory) }
-        fun newLongRange(range: LongRange) = CompositeRange(listOf(range), longAdder, longRangeFactory)
-        fun newLongRange(ranges: List<LongRange>) = CompositeRange(ranges, longAdder, longRangeFactory)
+        val emptyLongRange: CompositeRange<Long> by lazy { CompositeRange(emptyList(), longAdder, longRangeFactory, longSize) }
+        fun newLongRange(range: LongRange) = CompositeRange(listOf(range), longAdder, longRangeFactory, longSize)
+        fun newLongRange(ranges: List<LongRange>) = CompositeRange(ranges, longAdder, longRangeFactory, longSize)
 
-        val emptyIntRange: CompositeRange<Int> = CompositeRange(emptyList(), intAdder, intRangeFactory)
-        fun newIntRange(range: IntRange) = CompositeRange(listOf(range), intAdder, intRangeFactory)
-        fun newIntRange(ranges: List<IntRange>) = CompositeRange(ranges, intAdder, intRangeFactory)
+        val emptyIntRange: CompositeRange<Int> = CompositeRange(emptyList(), intAdder, intRangeFactory, intSize)
+        fun newIntRange(range: IntRange) = CompositeRange(listOf(range), intAdder, intRangeFactory, intSize)
+        fun newIntRange(ranges: List<IntRange>) = CompositeRange(ranges, intAdder, intRangeFactory, intSize)
     }
 }
 
