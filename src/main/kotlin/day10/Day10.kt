@@ -6,67 +6,55 @@ import helper.point.DirectionPoints
 import helper.point.Point
 import helper.point.Rectangle
 import java.util.*
+import kotlin.math.max
 
 fun solveA(text: String, debug: Debug = Debug.Disabled): Int {
     val map = text.lines().pad('.')
-    val graph = map.flatMapIndexed { y: Int, line: String ->
-        line.mapIndexedNotNull { x, c ->
-            val position = Point(x, y)
-            when (c) {
-                '.' -> null
-                '|' -> position to listOf(Point(x, y - 1), Point(x, y + 1)).filter { map[it] != '.' }.toSet()
-                '-' -> position to listOf(Point(x - 1, y), Point(x + 1, y)).filter { map[it] != '.' }.toSet()
-                'S' -> position to emptySet()
-                'J' -> position to listOf(Point(x, y - 1), Point(x - 1, y)).filter { map[it] != '.' }.toSet()
-                'L' -> position to listOf(Point(x, y - 1), Point(x + 1, y)).filter { map[it] != '.' }.toSet()
-                '7' -> position to listOf(Point(x, y + 1), Point(x - 1, y)).filter { map[it] != '.' }.toSet()
-                'F' -> position to listOf(Point(x, y + 1), Point(x + 1, y)).filter { map[it] != '.' }.toSet()
-                else -> throw IllegalArgumentException("$c")
-            }
-        }
-    }.toMap()
-
+    val graph = buildGraph(map)
     val startingPosition = graph.keys.first { map[it] == 'S' }
-    //build loop
     val (_, loopDistances) = buildLoop(startingPosition, graph)
-    return loopDistances.values.max()
+    return loopDistances
 }
 
 fun buildLoop(
     startingPosition: Point,
     graph: Map<Point, Set<Point>>
-): Pair<List<Point>, Map<Point, Int>> {
+): Pair<List<Point>, Int> {
 
     val startingNeighbours = startingPosition.neighbours().filter { startingPosition in (graph[it] ?: emptySet()) }
-    val distances = mutableMapOf(startingPosition to 0)
-    val neighbours = mutableMapOf<Point, Set<Point>>()
-    val toVisit = LinkedList<Pair<Point, Set<Point>>>()
-    toVisit.addAll(startingNeighbours.map { it to setOf(startingPosition) })
-    var loopPath: SequencedSet<Point>? = null
+    val pathToStart = mutableMapOf<Point, Point>()
+    val toVisit = LinkedList<Pair<Point, Point>>()
+    toVisit.addAll(startingNeighbours.map { it to startingPosition })
 
     do {
-        val (nextPoint, seenPath) = toVisit.pop()
-        val existingDistance = distances[nextPoint]
-        if (existingDistance == null || existingDistance > seenPath.size) {
-            distances[nextPoint] = seenPath.size
-        }
+        val (currentPoint, previousPoint) = toVisit.pop()
+        if (currentPoint !in pathToStart) {
+            pathToStart[currentPoint] = previousPoint
 
-        val allNeighbours = graph[nextPoint] ?: emptySet()
-        val newPath = LinkedHashSet<Point>().apply {
-            addAll(seenPath)
-            add(nextPoint)
-        }
-        if (allNeighbours.contains(startingPosition) && seenPath.size > 1) {
-            loopPath = newPath
+            val allNeighbours = graph[currentPoint] ?: emptySet()
+            val possibleNeighbours = allNeighbours.filter { it != previousPoint }
+            toVisit.addAll(possibleNeighbours.map { it to currentPoint })
         } else {
-            val possibleNeighbours = allNeighbours.filter { it !in seenPath }
+            val path = buildPath(currentPoint, startingPosition, pathToStart)
+            val otherPath = buildPath(previousPoint, startingPosition, pathToStart)
 
-            toVisit.addAll(possibleNeighbours.map { it to newPath })
+            val loopPath = otherPath.reversed() + path
+            val maxDistance = max(path.size, otherPath.size) - 1
+            return loopPath to maxDistance
         }
-    } while (!toVisit.isEmpty() && loopPath == null)
+    } while (true)
+}
 
-    return (loopPath!!.toList() + startingPosition) to distances.filterKeys { it in loopPath }
-
+private fun buildPath(
+    previousPoint: Point,
+    startingPosition: Point,
+    pathToStart: MutableMap<Point, Point>
+): MutableList<Point> {
+    val otherPath = mutableListOf(previousPoint)
+    while (otherPath.last() != startingPosition) {
+        otherPath.add(pathToStart[otherPath.last()]!!)
+    }
+    return otherPath
 }
 
 operator fun List<String>.get(point: Point) = this[point.y][point.x]
@@ -81,71 +69,46 @@ private fun List<String>.pad(c: Char): List<String> {
 
 fun solveB(text: String, debug: Debug = Debug.Disabled): Int {
     val map = text.lines().pad('.')
-    val graph = map.flatMapIndexed { y: Int, line: String ->
-        line.mapIndexedNotNull { x, c ->
-            val position = Point(x, y)
-            when (c) {
-                '.' -> null
-                '|' -> position to listOf(Point(x, y - 1), Point(x, y + 1)).filter { map[it] != '.' }.toSet()
-                '-' -> position to listOf(Point(x - 1, y), Point(x + 1, y)).filter { map[it] != '.' }.toSet()
-                'S' -> position to emptySet()
-                'J' -> position to listOf(Point(x, y - 1), Point(x - 1, y)).filter { map[it] != '.' }.toSet()
-                'L' -> position to listOf(Point(x, y - 1), Point(x + 1, y)).filter { map[it] != '.' }.toSet()
-                '7' -> position to listOf(Point(x, y + 1), Point(x - 1, y)).filter { map[it] != '.' }.toSet()
-                'F' -> position to listOf(Point(x, y + 1), Point(x + 1, y)).filter { map[it] != '.' }.toSet()
-                else -> throw IllegalArgumentException("$c")
-            }
-        }
-    }.toMap()
+    val graph = buildGraph(map)
 
     val startingPosition = graph.keys.first { map[it] == 'S' }
-    val (loopPath, _) = buildLoop(
-        startingPosition,
-        graph
-    )
+    val (loopPath, _) = buildLoop(startingPosition, graph)
 
     val pathSteps =
         loopPath.windowed(2, partialWindows = false).associate { (first, second) -> first to second }.toMap()
     val mapBounds = Rectangle(0..map[0].length, 0..map.size)
 
-    val toVisitPoints = LinkedHashSet<Point>()
-    toVisitPoints.add(Point.ZERO)
-    val followPath = LinkedHashSet<Pair<Point, Direction>>()
-
-    var lastDirection = Direction.UP
+    var lastDirection = direction(startingPosition, pathSteps[startingPosition]!!)
     var nextPosition = startingPosition
     val leftPoints = mutableSetOf<Point>()
     val rightPoints = mutableSetOf<Point>()
+
     do {
         val current = nextPosition
         nextPosition = pathSteps[current]!!
 
-        val directionPoints = DirectionPoints.downPositive
-        val direction = Direction.entries.first {
-            current + directionPoints[it] == nextPosition
-        }
+        val direction = direction(current, nextPosition)
 
         if (direction != lastDirection) {
-            val leftPoint = current + directionPoints[lastDirection.left]
+            val leftPoint = leftPoint(current, lastDirection)
             if (leftPoint !in pathSteps) {
                 leftPoints.add(leftPoint)
             }
-            val rightPoint = current + directionPoints[lastDirection.right]
+            val rightPoint = rightPoint(current, lastDirection)
             if (rightPoint !in pathSteps) {
                 rightPoints.add(rightPoint)
             }
         }
 
-        val leftPoint = current + directionPoints[direction.left]
+        val leftPoint = leftPoint(current, direction)
         if (leftPoint !in pathSteps) {
             leftPoints.add(leftPoint)
         }
-        val rightPoint = current + directionPoints[direction.right]
+        val rightPoint = rightPoint(current, direction)
         if (rightPoint !in pathSteps) {
             rightPoints.add(rightPoint)
         }
 
-        followPath.add(current to direction)
         lastDirection = direction
 
     } while (nextPosition != startingPosition)
@@ -154,12 +117,39 @@ fun solveB(text: String, debug: Debug = Debug.Disabled): Int {
     expandArea(rightPoints, mapBounds, pathSteps)
 
     return if (leftPoints.contains(Point.ZERO)) {
-        debug { println(getFilteredMap(map, rightPoints, leftPoints, pathSteps)) }
+        debug { println(getFilteredMap(map, rightPoints, leftPoints, pathSteps).joinToString(separator = "\n")) }
         rightPoints.size
     } else {
-        debug { println(getFilteredMap(map, leftPoints, rightPoints, pathSteps)) }
+        debug { println(getFilteredMap(map, leftPoints, rightPoints, pathSteps).joinToString(separator = "\n")) }
         leftPoints.size
     }
+}
+
+private fun buildGraph(map: List<String>) = map.flatMapIndexed { y: Int, line: String ->
+    line.mapIndexedNotNull { x, c ->
+        val position = Point(x, y)
+        when (c) {
+            '.' -> null
+            '|' -> position to listOf(Point(x, y - 1), Point(x, y + 1)).filter { map[it] != '.' }.toSet()
+            '-' -> position to listOf(Point(x - 1, y), Point(x + 1, y)).filter { map[it] != '.' }.toSet()
+            'S' -> position to emptySet()
+            'J' -> position to listOf(Point(x, y - 1), Point(x - 1, y)).filter { map[it] != '.' }.toSet()
+            'L' -> position to listOf(Point(x, y - 1), Point(x + 1, y)).filter { map[it] != '.' }.toSet()
+            '7' -> position to listOf(Point(x, y + 1), Point(x - 1, y)).filter { map[it] != '.' }.toSet()
+            'F' -> position to listOf(Point(x, y + 1), Point(x + 1, y)).filter { map[it] != '.' }.toSet()
+            else -> throw IllegalArgumentException("$c")
+        }
+    }
+}.toMap()
+
+private fun rightPoint(current: Point, direction: Direction) = current + DirectionPoints.downPositive[direction.right]
+private fun leftPoint(current: Point, direction: Direction) = current + DirectionPoints.downPositive[direction.left]
+
+private fun direction(
+    current: Point,
+    nextPosition: Point
+) = Direction.entries.first {
+    current + DirectionPoints.downPositive[it] == nextPosition
 }
 
 private fun expandArea(
@@ -198,24 +188,3 @@ private fun getFilteredMap(
     }.joinToString(separator = "")
 }
 
-private fun List<Int>.toWallRanges(y: Int, graph: Map<Point, Set<Point>>): List<IntRange> {
-    val ranges = mutableListOf<IntRange>()
-    val toVisit = toMutableList()
-
-    while (toVisit.isNotEmpty()) {
-        val start = toVisit.removeFirst()
-        var current = start
-
-        while (toVisit.isNotEmpty() && toVisit.first() == current + 1) {
-            val currentPoint = Point(current, y)
-            val nextPoint = Point(toVisit.first(), y)
-            if (nextPoint in (graph[currentPoint] ?: emptySet())) {
-                current = toVisit.removeFirst()
-            } else {
-                break
-            }
-        }
-        ranges.add(start..current)
-    }
-    return ranges
-}

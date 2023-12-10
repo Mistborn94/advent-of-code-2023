@@ -38,7 +38,7 @@ SJ.L7
 LJ...""".trim()
 
         assertEquals(8, solveA(text, Debug.Enabled))
-        assertEquals(1, solveB(text, Debug.Disabled))
+        assertEquals(1, solveB(text, Debug.Enabled))
     }
 
     @Test
@@ -92,7 +92,7 @@ L--J.L7...LJS7F-7L7.
 .L--JL--J.
 ...........""".trim()
 
-        assertEquals(4, solveB(text, Debug.Disabled))
+        assertEquals(4, solveB(text, Debug.Enabled))
     }
     @Test
     fun sample6() {
