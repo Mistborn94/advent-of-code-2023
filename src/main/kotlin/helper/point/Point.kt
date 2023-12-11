@@ -47,6 +47,35 @@ data class Point(val x: Int, val y: Int) {
     }
 }
 
+data class LongPoint(val x: Long, val y: Long) {
+
+    fun abs(): Long {
+        return kotlin.math.abs(x) + kotlin.math.abs(y)
+    }
+
+    operator fun minus(other: LongPoint): LongPoint = LongPoint(x - other.x, y - other.y)
+    operator fun plus(other: LongPoint) = LongPoint(x + other.x, y + other.y)
+    operator fun times(value: Long) = LongPoint(x * value, y * value)
+
+    fun neighbours() = listOf(
+        LongPoint(x + 1, y),
+        LongPoint(x - 1, y),
+        LongPoint(x, y + 1),
+        LongPoint(x, y - 1)
+    )
+
+    fun diagonalNeighbours() = listOf(
+        LongPoint(x + 1, y + 1),
+        LongPoint(x + 1, y - 1),
+        LongPoint(x - 1, y + 1),
+        LongPoint(x - 1, y - 1)
+    )
+
+    companion object {
+        val ZERO = LongPoint(0, 0)
+    }
+}
+
 operator fun <E> Collection<Collection<E>>.contains(point: Point): Boolean = this.isNotEmpty() && point.y in this.indices && point.x in this.first().indices
 operator fun <E> List<List<E>>.get(point: Point) = this[point.y][point.x]
 operator fun <E> List<MutableList<E>>.set(point: Point, value: E) {

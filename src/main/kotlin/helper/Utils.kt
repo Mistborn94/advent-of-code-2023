@@ -31,6 +31,7 @@ fun Iterable<Int>.digitsToInt(radix: Int) = reduce { acc, digit -> acc * radix +
 fun Iterable<Int>.digitsToLong(radix: Int): Long = fold(0L) { acc, digit -> acc * radix + digit }
 fun <E> MutableList<E>.removeFirstN(count: Int): List<E> = (0 until count).map { removeFirst() }
 
+fun <A, B> Iterable<A>.pairwise(other: Iterable<B>): List<Pair<A, B>> = flatMapIndexed { i, a -> other.drop(i + 1).map { b -> a to b } }
 fun <A, B> Iterable<A>.cartesianProduct(other: Iterable<B>): List<Pair<A, B>> = flatMap { a -> other.map { b -> a to b } }
 fun <A, B, R> Iterable<A>.cartesianProduct(other: Iterable<B>, transform: (A, B) -> R): List<R> = flatMap { a -> other.map { b -> transform(a, b) } }
 
