@@ -2,7 +2,6 @@ package day10
 
 import helper.Debug
 import helper.point.Direction
-import helper.point.DirectionPoints
 import helper.point.Point
 import helper.point.Rectangle
 import java.util.*
@@ -78,40 +77,17 @@ fun solveB(text: String, debug: Debug = Debug.Disabled): Int {
         loopPath.windowed(2, partialWindows = false).associate { (first, second) -> first to second }.toMap()
     val mapBounds = Rectangle(0..map[0].length, 0..map.size)
 
-    var lastDirection = direction(startingPosition, pathSteps[startingPosition]!!)
-    var nextPosition = startingPosition
     val leftPoints = mutableSetOf<Point>()
     val rightPoints = mutableSetOf<Point>()
 
-    do {
-        val current = nextPosition
-        nextPosition = pathSteps[current]!!
+    pathSteps.forEach { (currentPosition, nextPosition) ->
+        val direction = direction(currentPosition, nextPosition)
 
-        val direction = direction(current, nextPosition)
-
-        if (direction != lastDirection) {
-            val leftPoint = leftPoint(current, lastDirection)
-            if (leftPoint !in pathSteps) {
-                leftPoints.add(leftPoint)
-            }
-            val rightPoint = rightPoint(current, lastDirection)
-            if (rightPoint !in pathSteps) {
-                rightPoints.add(rightPoint)
-            }
-        }
-
-        val leftPoint = leftPoint(current, direction)
-        if (leftPoint !in pathSteps) {
-            leftPoints.add(leftPoint)
-        }
-        val rightPoint = rightPoint(current, direction)
-        if (rightPoint !in pathSteps) {
-            rightPoints.add(rightPoint)
-        }
-
-        lastDirection = direction
-
-    } while (nextPosition != startingPosition)
+        addNeighbour(currentPosition, direction.left, pathSteps, leftPoints)
+        addNeighbour(nextPosition, direction.left, pathSteps, leftPoints)
+        addNeighbour(currentPosition, direction.right, pathSteps, rightPoints)
+        addNeighbour(nextPosition, direction.right, pathSteps, rightPoints)
+    }
 
     expandArea(leftPoints, mapBounds, pathSteps)
     expandArea(rightPoints, mapBounds, pathSteps)
@@ -122,6 +98,13 @@ fun solveB(text: String, debug: Debug = Debug.Disabled): Int {
     } else {
         debug { println(getFilteredMap(map, leftPoints, rightPoints, pathSteps).joinToString(separator = "\n")) }
         leftPoints.size
+    }
+}
+
+private fun addNeighbour(point: Point, direction: Direction, pathSteps: Map<Point, Point>, points: MutableSet<Point>) {
+    val neighbourPoint = point + direction.pointPositiveDown
+    if (neighbourPoint !in pathSteps) {
+        points.add(neighbourPoint)
     }
 }
 
@@ -142,14 +125,11 @@ private fun buildGraph(map: List<String>) = map.flatMapIndexed { y: Int, line: S
     }
 }.toMap()
 
-private fun rightPoint(current: Point, direction: Direction) = current + DirectionPoints.downPositive[direction.right]
-private fun leftPoint(current: Point, direction: Direction) = current + DirectionPoints.downPositive[direction.left]
-
 private fun direction(
     current: Point,
     nextPosition: Point
 ) = Direction.entries.first {
-    current + DirectionPoints.downPositive[it] == nextPosition
+    current + it.pointPositiveDown == nextPosition
 }
 
 private fun expandArea(

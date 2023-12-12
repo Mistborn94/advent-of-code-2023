@@ -35,6 +35,12 @@ enum class Direction(val char: Char, val orientation: Orientation) {
     abstract val right: Direction
     abstract val opposite: Direction
 
+    val pointPositiveDown: Point
+        get() = DirectionPointMapping.downPositive[this]
+
+    val pointPositiveUp: Point
+        get() = DirectionPointMapping.upPositive[this]
+
     override fun toString(): String = "$char"
 
     companion object {
@@ -45,7 +51,7 @@ enum class Direction(val char: Char, val orientation: Orientation) {
     }
 }
 
-class DirectionPoints(positiveY: Direction, positiveX: Direction) {
+class DirectionPointMapping(positiveY: Direction, positiveX: Direction) {
 
     val up = if (positiveY == Direction.UP) Point(0, 1) else Point(0, -1)
     val down = Point(0, -up.y)
@@ -62,7 +68,7 @@ class DirectionPoints(positiveY: Direction, positiveX: Direction) {
     }
 
     companion object {
-        val downPositive = DirectionPoints(Direction.DOWN, Direction.RIGHT)
-        val upPositive = DirectionPoints(Direction.UP, Direction.RIGHT)
+        val downPositive = DirectionPointMapping(Direction.DOWN, Direction.RIGHT)
+        val upPositive = DirectionPointMapping(Direction.UP, Direction.RIGHT)
     }
 }

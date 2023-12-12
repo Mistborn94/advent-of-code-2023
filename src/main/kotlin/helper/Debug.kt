@@ -4,13 +4,13 @@ sealed interface Debug {
 
     operator fun invoke(action: () -> Unit)
 
-    object Enabled : Debug {
+    data object Enabled : Debug {
         override fun invoke(action: () -> Unit) {
             action()
         }
     }
 
-    object Disabled : Debug {
+    data object Disabled : Debug {
         override fun invoke(action: () -> Unit) {}
     }
 }

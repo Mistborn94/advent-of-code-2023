@@ -71,6 +71,23 @@ data class LongPoint(val x: Long, val y: Long) {
         LongPoint(x - 1, y - 1)
     )
 
+    /**
+     * Rotate the point clockwise around the origin
+     */
+    fun clockwise(degrees: Int): LongPoint {
+        return when (degrees) {
+            90 -> LongPoint(y, -x)
+            180 -> LongPoint(-x, -y)
+            270 -> LongPoint(-y, x)
+            else -> throw UnsupportedOperationException()
+        }
+    }
+
+    /**
+     * Rotate the point counterclockwise around the origin
+     */
+    fun counterClockwise(degrees: Int): LongPoint = clockwise(360 - degrees)
+
     companion object {
         val ZERO = LongPoint(0, 0)
     }
