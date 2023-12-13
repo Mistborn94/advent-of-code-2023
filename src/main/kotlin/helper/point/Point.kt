@@ -105,7 +105,7 @@ operator fun <E> Array<Array<E>>.set(point: Point, value: E) {
     this[point.y][point.x] = value
 }
 
-fun <E> List<Collection<E>>.points(): ArrayList<Point> {
+fun <E> List<Collection<E>>.points(): List<Point> {
     return indices.flatMapTo(ArrayList()) { y ->
         this[y].indices.map { x -> Point(x, y) }
     }
