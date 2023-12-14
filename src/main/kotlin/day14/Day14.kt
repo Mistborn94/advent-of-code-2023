@@ -47,11 +47,30 @@ private fun moveInDirection(
 
 
 fun solveB(text: String, debug: Debug = Debug.Disabled): Int {
+    val cycleCount = 1_000_000_000
     val lines = text.lines()
     val rockPositions = findRocks(lines).toMutableSet()
     val mapBounds = Rectangle(lines[0].indices, lines.indices)
 
-    repeat(1000) {
+    val seenStates = mutableMapOf<Set<Point>, Int>()
+
+    var cycle: Int = 0
+    while (rockPositions !in seenStates) {
+        seenStates[rockPositions.toSet()] = cycle
+
+        moveInDirection(rockPositions, lines, Direction.NORTH, mapBounds)
+        moveInDirection(rockPositions, lines, Direction.WEST, mapBounds)
+        moveInDirection(rockPositions, lines, Direction.SOUTH, mapBounds)
+        moveInDirection(rockPositions, lines, Direction.EAST, mapBounds)
+
+        ++cycle
+    }
+
+    val seenAt = seenStates[rockPositions]!!
+    val cycleLength = cycle - seenAt
+    val remainder = (cycleCount - seenAt) % cycleLength
+
+    repeat(remainder) {
         moveInDirection(rockPositions, lines, Direction.NORTH, mapBounds)
         moveInDirection(rockPositions, lines, Direction.WEST, mapBounds)
         moveInDirection(rockPositions, lines, Direction.SOUTH, mapBounds)

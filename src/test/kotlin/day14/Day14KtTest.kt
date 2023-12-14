@@ -31,19 +31,6 @@ O.#..O.#.#
     }
 
     @Test
-    @Ignore
-    fun sample2() {
-//        val text = readDayFile(day, "sample2.in").readText().trimEnd()
-
-        val text = """
-            |
-        """.trimMargin().trimEnd()
-
-        assertEquals(0, solveA(text, Debug.Enabled))
-        assertEquals(0, solveB(text, Debug.Disabled))
-    }
-
-    @Test
     fun solve() {
         val lines = readDayFile(day, "input").readText().trimEnd()
 

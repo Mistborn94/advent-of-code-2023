@@ -93,7 +93,9 @@ data class LongPoint(val x: Long, val y: Long) {
     }
 }
 
+@JvmName("strContains")
 operator fun Collection<String>.contains(point: Point): Boolean = this.isNotEmpty() && point.y in this.indices && point.x in this.first().indices
+@JvmName("strGet")
 operator fun List<String>.get(point: Point) = this[point.y][point.x]
 @JvmName("strPoints")
 fun List<String>.points(): List<Point> = indices.flatMap { y ->
