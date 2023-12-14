@@ -93,8 +93,18 @@ data class LongPoint(val x: Long, val y: Long) {
     }
 }
 
+operator fun Collection<String>.contains(point: Point): Boolean = this.isNotEmpty() && point.y in this.indices && point.x in this.first().indices
+operator fun List<String>.get(point: Point) = this[point.y][point.x]
+@JvmName("strPoints")
+fun List<String>.points(): List<Point> = indices.flatMap { y ->
+    this[y].indices.map { x -> Point(x, y) }
+}
+
 operator fun <E> Collection<Collection<E>>.contains(point: Point): Boolean = this.isNotEmpty() && point.y in this.indices && point.x in this.first().indices
 operator fun <E> List<List<E>>.get(point: Point) = this[point.y][point.x]
+fun <E> List<Collection<E>>.points(): List<Point> = indices.flatMap { y ->
+    this[y].indices.map { x -> Point(x, y) }
+}
 operator fun <E> List<MutableList<E>>.set(point: Point, value: E) {
     this[point.y][point.x] = value
 }
@@ -105,13 +115,5 @@ operator fun <E> Array<Array<E>>.set(point: Point, value: E) {
     this[point.y][point.x] = value
 }
 
-fun <E> List<Collection<E>>.points(): List<Point> {
-    return indices.flatMapTo(ArrayList()) { y ->
-        this[y].indices.map { x -> Point(x, y) }
-    }
-}
-
-fun <T> List<Collection<T>>.indexOf(item: T): Point {
-    val y = this.indexOfFirst { it.contains(item) }
-    return Point(this[y].indexOf(item), y)
-}
+fun <T> List<Collection<T>>.indexOf(item: T): Point =
+    this.mapIndexedNotNull { y, line -> line.indexOf(item).let { x -> if (x != -1) Point(x, y) else null } }.first()

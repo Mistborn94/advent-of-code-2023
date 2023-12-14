@@ -1,15 +1,8 @@
 package day13
 
 import helper.Debug
-import helper.point.Point
+import helper.point.points
 import kotlin.math.min
-
-
-fun List<String>.patternPoints(): List<Point> {
-    return indices.flatMapTo(ArrayList()) { y ->
-        this[y].indices.map { x -> Point(x, y) }
-    }
-}
 
 fun solveA(text: String, debug: Debug = Debug.Disabled): Int {
     val patterns = text.replace("\r", "").split("\n\n")
@@ -111,7 +104,8 @@ fun mutatePattern(debug: Debug, lines: List<String>): Sequence<List<String>> {
             }"
         )
     }
-    return lines.patternPoints().asSequence().map { (x, y) ->
+
+    return lines.points().asSequence().map { (x, y) ->
 
         val rowsBefore = lines.subList(0, y)
         val current = lines[y]
