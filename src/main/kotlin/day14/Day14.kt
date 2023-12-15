@@ -1,24 +1,17 @@
 package day14
 
 import helper.Debug
-import helper.point.Direction
-import helper.point.Point
-import helper.point.Rectangle
-import helper.point.get
+import helper.point.*
 
 
 fun solveA(text: String, debug: Debug = Debug.Disabled): Int {
     val lines = text.lines()
-    val rockPositions = findRocks(lines).toMutableSet()
+    val rockPositions = lines.findAll('O').toMutableSet()
     val mapBounds = Rectangle(lines[0].indices, lines.indices)
 
     moveInDirection(rockPositions, lines, Direction.NORTH, mapBounds)
 
     return rockPositions.sumOf { lines.size - it.y }
-}
-
-private fun findRocks(lines: List<String>) = lines.flatMapIndexed { y: Int, line: String ->
-    line.mapIndexedNotNull { x, c -> if (c == 'O') Point(x, y) else null }
 }
 
 private fun moveInDirection(
@@ -49,7 +42,7 @@ private fun moveInDirection(
 fun solveB(text: String, debug: Debug = Debug.Disabled): Int {
     val cycleCount = 1_000_000_000
     val lines = text.lines()
-    val rockPositions = findRocks(lines).toMutableSet()
+    val rockPositions = lines.findAll('O').toMutableSet()
     val mapBounds = Rectangle(lines[0].indices, lines.indices)
 
     val seenStates = mutableMapOf<Set<Point>, Int>()
