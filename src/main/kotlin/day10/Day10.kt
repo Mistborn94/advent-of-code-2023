@@ -1,10 +1,11 @@
 package day10
 
 import helper.Debug
-import helper.point.Direction
+import helper.pad
 import helper.point.base.Point
-import helper.point.base.Rectangle
-import java.util.*
+import helper.point.base.Polygon
+import helper.point.base.get
+import kotlin.collections.*
 import kotlin.math.max
 
 fun solveA(text: String, debug: Debug = Debug.Disabled): Int {
@@ -22,11 +23,11 @@ fun buildLoop(
 
     val startingNeighbours = startingPosition.neighbours().filter { startingPosition in (graph[it] ?: emptySet()) }
     val pathToStart = mutableMapOf<Point, Point>()
-    val toVisit = LinkedList<Pair<Point, Point>>()
+    val toVisit = mutableListOf<Pair<Point, Point>>()
     toVisit.addAll(startingNeighbours.map { it to startingPosition })
 
     do {
-        val (currentPoint, previousPoint) = toVisit.pop()
+        val (currentPoint, previousPoint) = toVisit.removeFirst()
         if (currentPoint !in pathToStart) {
             pathToStart[currentPoint] = previousPoint
 
@@ -56,16 +57,6 @@ private fun buildPath(
     return otherPath
 }
 
-operator fun List<String>.get(point: Point) = this[point.y][point.x]
-
-private fun List<String>.pad(c: Char): List<String> {
-    val length = this[0].length + 2
-    val str = buildString(length) {
-        repeat(length) { append(c) }
-    }
-    return listOf(str) + this.map { "$c$it$c" } + listOf(str)
-}
-
 fun solveB(text: String, debug: Debug = Debug.Disabled): Int {
     val map = text.lines().pad('.')
     val graph = buildGraph(map)
@@ -73,39 +64,7 @@ fun solveB(text: String, debug: Debug = Debug.Disabled): Int {
     val startingPosition = graph.keys.first { map[it] == 'S' }
     val (loopPath, _) = buildLoop(startingPosition, graph)
 
-    val pathSteps =
-        loopPath.windowed(2, partialWindows = false).associate { (first, second) -> first to second }.toMap()
-    val mapBounds = Rectangle(0..map[0].length, 0..map.size)
-
-    val leftPoints = mutableSetOf<Point>()
-    val rightPoints = mutableSetOf<Point>()
-
-    pathSteps.forEach { (currentPosition, nextPosition) ->
-        val direction = direction(currentPosition, nextPosition)
-
-        addNeighbour(currentPosition, direction.left, pathSteps, leftPoints)
-        addNeighbour(nextPosition, direction.left, pathSteps, leftPoints)
-        addNeighbour(currentPosition, direction.right, pathSteps, rightPoints)
-        addNeighbour(nextPosition, direction.right, pathSteps, rightPoints)
-    }
-
-    expandArea(leftPoints, mapBounds, pathSteps)
-    expandArea(rightPoints, mapBounds, pathSteps)
-
-    return if (leftPoints.contains(Point.ZERO)) {
-        debug { println(getFilteredMap(map, rightPoints, leftPoints, pathSteps).joinToString(separator = "\n")) }
-        rightPoints.size
-    } else {
-        debug { println(getFilteredMap(map, leftPoints, rightPoints, pathSteps).joinToString(separator = "\n")) }
-        leftPoints.size
-    }
-}
-
-private fun addNeighbour(point: Point, direction: Direction, pathSteps: Map<Point, Point>, points: MutableSet<Point>) {
-    val neighbourPoint = point + direction.point
-    if (neighbourPoint !in pathSteps) {
-        points.add(neighbourPoint)
-    }
+    return Polygon(loopPath).areaInsideBoundary()
 }
 
 private fun buildGraph(map: List<String>) = map.flatMapIndexed { y: Int, line: String ->
@@ -124,47 +83,3 @@ private fun buildGraph(map: List<String>) = map.flatMapIndexed { y: Int, line: S
         }
     }
 }.toMap()
-
-private fun direction(
-    current: Point,
-    nextPosition: Point
-) = Direction.entries.first {
-    current + it.point == nextPosition
-}
-
-private fun expandArea(
-    area: MutableSet<Point>,
-    mapBounds: Rectangle,
-    filteredGraph: Map<Point, Point>
-) {
-
-    val toVisit = LinkedHashSet<Point>()
-    toVisit.addAll(area)
-
-    while (toVisit.isNotEmpty()) {
-        val current = toVisit.removeFirst()
-        area.add(current)
-
-        toVisit.addAll(current.neighbours().filter { it in mapBounds && it !in filteredGraph && it !in area })
-    }
-}
-
-private fun getFilteredMap(
-    map: List<String>,
-    insidePoints: MutableSet<Point>,
-    outsidePoints: MutableSet<Point>,
-    loop: Map<Point, Point>
-) = map.mapIndexed { y: Int, s: String ->
-    s.mapIndexed { x, c ->
-        if (Point(x, y) in insidePoints) {
-            'I'
-        } else if (Point(x, y) in outsidePoints) {
-            'O'
-        } else if (Point(x, y) in loop) {
-            c
-        } else {
-            '.'
-        }
-    }.joinToString(separator = "")
-}
-

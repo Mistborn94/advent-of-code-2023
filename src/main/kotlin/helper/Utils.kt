@@ -32,13 +32,26 @@ fun Iterable<Int>.digitsToInt(radix: Int) = reduce { acc, digit -> acc * radix +
 fun Iterable<Int>.digitsToLong(radix: Int): Long = fold(0L) { acc, digit -> acc * radix + digit }
 fun <E> MutableList<E>.removeFirstN(count: Int): List<E> = (0 until count).map { removeFirst() }
 
-fun <A, B> Iterable<A>.pairwise(other: Iterable<B>): List<Pair<A, B>> = flatMapIndexed { i, a -> other.drop(i + 1).map { b -> a to b } }
-fun <A, B> Iterable<A>.cartesianProduct(other: Iterable<B>): List<Pair<A, B>> = flatMap { a -> other.map { b -> a to b } }
-fun <A, B, R> Iterable<A>.cartesianProduct(other: Iterable<B>, transform: (A, B) -> R): List<R> = flatMap { a -> other.map { b -> transform(a, b) } }
+/**
+ * Like cartesian product but each combination is returned only once regardless of order
+ */
+fun <A, B> Iterable<A>.pairwise(other: Iterable<B>): List<Pair<A, B>> =
+    flatMapIndexed { i, a -> other.drop(i + 1).map { b -> a to b } }
 
-fun <A, B> Sequence<A>.cartesianProduct(other: Sequence<B>): Sequence<Pair<A, B>> = flatMap { a -> other.map { b -> a to b } }
-fun <A, B, R> Sequence<A>.cartesianProduct(other: Sequence<B>, transform: (A, B) -> R): Sequence<R> = flatMap { a -> other.map { b -> transform(a, b) } }
-fun <A, B, R> Stream<A>.cartesianProduct(other: Iterable<B>, transform: (A, B) -> R): Stream<R> = flatMap { a -> other.map { b -> transform(a, b) }.stream() }
+fun <A, B> Iterable<A>.cartesianProduct(other: Iterable<B>): List<Pair<A, B>> =
+    flatMap { a -> other.map { b -> a to b } }
+
+fun <A, B, R> Iterable<A>.cartesianProduct(other: Iterable<B>, transform: (A, B) -> R): List<R> =
+    flatMap { a -> other.map { b -> transform(a, b) } }
+
+fun <A, B> Sequence<A>.cartesianProduct(other: Sequence<B>): Sequence<Pair<A, B>> =
+    flatMap { a -> other.map { b -> a to b } }
+
+fun <A, B, R> Sequence<A>.cartesianProduct(other: Sequence<B>, transform: (A, B) -> R): Sequence<R> =
+    flatMap { a -> other.map { b -> transform(a, b) } }
+
+fun <A, B, R> Stream<A>.cartesianProduct(other: Iterable<B>, transform: (A, B) -> R): Stream<R> =
+    flatMap { a -> other.map { b -> transform(a, b) }.stream() }
 
 fun <T> ArrayList<T>.resize(minimumSize: Int, supplier: () -> T) {
     if (minimumSize < 0) {
@@ -114,4 +127,31 @@ inline fun <reified K : Enum<K>, reified V> enumMap(map: Map<K, V>): EnumMap<K, 
     is EnumMap -> map
     emptyMap<K, V>() -> enumMap()
     else -> EnumMap(map)
+}
+
+@JvmName("strListPad")
+fun List<String>.pad(c: Char): List<String> {
+    val length = this[0].length + 2
+    val str = buildString(length) {
+        repeat(length) { append(c) }
+    }
+    return listOf(str) + this.map { "$c$it$c" } + listOf(str)
+}
+
+fun <T> List<List<T>>.pad(pad: T): List<List<T>> {
+    val length = this[0].size + 2
+    val prefixSuffix = buildList(length) {
+        repeat(length) { add(pad) }
+    }
+    return buildList {
+        add(prefixSuffix)
+        addAll(this.map { line ->
+            buildList {
+                add(pad)
+                addAll(line)
+                add(pad)
+            }
+        })
+        add(prefixSuffix)
+    }
 }
