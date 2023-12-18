@@ -1,7 +1,8 @@
 package day14
 
 import helper.Debug
-import helper.point.*
+import helper.point.Direction
+import helper.point.base.*
 
 
 fun solveA(text: String, debug: Debug = Debug.Disabled): Int {
@@ -29,10 +30,10 @@ private fun moveInDirection(
     for (rock in rockPositions) {
         finalRockPositions.remove(rock)
         var current = rock
-        var next = rock + direction.pointPositiveDown
+        var next = rock + direction.point
         while (next in mapBounds && lines[next] != '#' && !finalRockPositions.contains(next)) {
             current = next
-            next += direction.pointPositiveDown
+            next += direction.point
         }
         finalRockPositions.add(current)
     }

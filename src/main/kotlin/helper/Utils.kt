@@ -25,6 +25,7 @@ fun <T> recursiveRepeat(n: Int, initial: T, func: (T) -> T): T {
 }
 
 fun IntRange.size(): Int = max(0, last - first + 1)
+fun LongRange.size(): Long = max(0, last - first + 1)
 fun Iterable<Long>.product() = reduce { acc, item -> acc * item }
 fun Iterable<Int>.product() = reduce { acc, item -> acc * item }
 fun Iterable<Int>.digitsToInt(radix: Int) = reduce { acc, digit -> acc * radix + digit }

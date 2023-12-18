@@ -1,33 +1,32 @@
 package day17
 
 import helper.Debug
-import helper.graph.GraphSearchResult
 import helper.graph.findShortestPathByPredicate
 import helper.point.Direction
-import helper.point.Point
-import helper.point.contains
-import helper.point.get
+import helper.point.base.Point
+import helper.point.base.contains
+import helper.point.base.get
 
 data class PointInDirection(val point: Point, val direction: Direction, val line: Int) {
     fun neighbours(): List<PointInDirection> {
         return buildList {
             if (line < 3) {
-                add(PointInDirection(point + direction.pointPositiveDown, direction, line + 1))
+                add(PointInDirection(point + direction.point, direction, line + 1))
             }
-            add(PointInDirection(point + direction.right.pointPositiveDown, direction.right, 1))
-            add(PointInDirection(point + direction.left.pointPositiveDown, direction.left, 1))
+            add(PointInDirection(point + direction.right.point, direction.right, 1))
+            add(PointInDirection(point + direction.left.point, direction.left, 1))
         }
     }
 
     fun ultraNeighbours(): List<PointInDirection> {
         return buildList {
             if (line < 10) {
-                add(PointInDirection(point + direction.pointPositiveDown, direction, line + 1))
+                add(PointInDirection(point + direction.point, direction, line + 1))
             }
             //line == 0 caters for the starting state where we can go any direction
             if (line >= 4 || line == 0) {
-                add(PointInDirection(point + direction.right.pointPositiveDown, direction.right, 1))
-                add(PointInDirection(point + direction.left.pointPositiveDown, direction.left, 1))
+                add(PointInDirection(point + direction.right.point, direction.right, 1))
+                add(PointInDirection(point + direction.left.point, direction.left, 1))
             }
         }
     }

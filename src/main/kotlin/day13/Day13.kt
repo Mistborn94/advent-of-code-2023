@@ -1,7 +1,7 @@
 package day13
 
 import helper.Debug
-import helper.point.points
+import helper.point.base.points
 import kotlin.math.min
 
 fun solveA(text: String, debug: Debug = Debug.Disabled): Int {

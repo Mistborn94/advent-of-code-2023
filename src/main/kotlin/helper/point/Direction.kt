@@ -1,5 +1,7 @@
 package helper.point
 
+import helper.point.base.Point
+
 enum class Orientation {
     HORIZONTAL,
     VERTICAL
@@ -35,11 +37,8 @@ enum class Direction(val char: Char, val orientation: Orientation) {
     abstract val right: Direction
     abstract val opposite: Direction
 
-    val pointPositiveDown: Point
-        get() = DirectionPointMapping.downPositive[this]
-
-    val pointPositiveUp: Point
-        get() = DirectionPointMapping.upPositive[this]
+    val point: Point get() = DirectionPointMapping.downPositive[this]
+    val pointPositiveUp: Point get() = DirectionPointMapping.upPositive[this]
 
     override fun toString(): String = "$char"
 
@@ -51,7 +50,7 @@ enum class Direction(val char: Char, val orientation: Orientation) {
     }
 }
 
-class DirectionPointMapping(positiveY: Direction, positiveX: Direction) {
+private class DirectionPointMapping(positiveY: Direction, positiveX: Direction) {
 
     val up = if (positiveY == Direction.UP) Point(0, 1) else Point(0, -1)
     val down = Point(0, -up.y)

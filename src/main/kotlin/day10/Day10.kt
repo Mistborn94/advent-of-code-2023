@@ -2,8 +2,8 @@ package day10
 
 import helper.Debug
 import helper.point.Direction
-import helper.point.Point
-import helper.point.Rectangle
+import helper.point.base.Point
+import helper.point.base.Rectangle
 import java.util.*
 import kotlin.math.max
 
@@ -102,7 +102,7 @@ fun solveB(text: String, debug: Debug = Debug.Disabled): Int {
 }
 
 private fun addNeighbour(point: Point, direction: Direction, pathSteps: Map<Point, Point>, points: MutableSet<Point>) {
-    val neighbourPoint = point + direction.pointPositiveDown
+    val neighbourPoint = point + direction.point
     if (neighbourPoint !in pathSteps) {
         points.add(neighbourPoint)
     }
@@ -129,7 +129,7 @@ private fun direction(
     current: Point,
     nextPosition: Point
 ) = Direction.entries.first {
-    current + it.pointPositiveDown == nextPosition
+    current + it.point == nextPosition
 }
 
 private fun expandArea(

@@ -2,8 +2,8 @@ package day11
 
 import helper.Debug
 import helper.pairwise
-import helper.point.LongPoint
-import helper.point.Point
+import helper.point.long.LongPoint
+import helper.point.base.Point
 
 fun solve(text: String, debug: Debug = Debug.Disabled, factor: Long = 2): Long {
     debug { println("Starting calculation with $factor") }

@@ -1,7 +1,7 @@
 package day3
 
 import helper.Debug
-import helper.point.Point
+import helper.point.base.Point
 
 data class PartNumber(val y: Int, val xRange: IntRange, val value: Int) {
     val possibleSymbols: List<Point>

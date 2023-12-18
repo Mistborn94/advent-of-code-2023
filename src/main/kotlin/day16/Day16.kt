@@ -2,9 +2,9 @@ package day16
 
 import helper.Debug
 import helper.point.Direction
-import helper.point.Point
-import helper.point.contains
-import helper.point.get
+import helper.point.base.Point
+import helper.point.base.contains
+import helper.point.base.get
 
 fun solveA(text: String, debug: Debug = Debug.Disabled): Int {
     val map = text.lines()
@@ -86,7 +86,7 @@ private fun solve(
                 else -> throw IllegalArgumentException("""Unknown char "$cell"""")
             }
 
-            currentPosition += currentDirection.pointPositiveDown
+            currentPosition += currentDirection.point
         }
     }
 
