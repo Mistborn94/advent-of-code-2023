@@ -155,3 +155,9 @@ fun <T> List<List<T>>.pad(pad: T): List<List<T>> {
         add(prefixSuffix)
     }
 }
+
+fun <E> MutableSet<E>.removeFirst(): E {
+    val first = first()
+    remove(first)
+    return first
+}

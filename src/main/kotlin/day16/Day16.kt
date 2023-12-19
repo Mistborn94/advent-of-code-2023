@@ -5,6 +5,7 @@ import helper.point.Direction
 import helper.point.base.Point
 import helper.point.base.contains
 import helper.point.base.get
+import helper.removeFirst
 
 fun solveA(text: String, debug: Debug = Debug.Disabled): Int {
     val map = text.lines()
@@ -93,9 +94,4 @@ private fun solve(
     return energizedCells.size
 }
 
-private fun <E> MutableSet<E>.removeFirst(): E {
-    val first = first()
-    remove(first)
-    return first
-}
 
