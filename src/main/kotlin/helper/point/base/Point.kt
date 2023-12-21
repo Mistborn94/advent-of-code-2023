@@ -40,6 +40,12 @@ data class Point(val x: Int, val y: Int) {
         Point(x - 1, y - 1)
     )
 
+    operator fun rem(bounds: Point): Point {
+        val x = Math.floorMod(x, bounds.x)
+        val y = Math.floorMod(y, bounds.y)
+        return Point(x, y)
+    }
+
     companion object {
         val ZERO = Point(0, 0)
     }
@@ -57,7 +63,9 @@ fun List<String>.points(): List<Point> = indices.flatMap { y -> this[y].indices.
 fun List<String>.findAll(char: Char): List<Point> = flatMapIndexed { y: Int, row: String ->
     row.mapIndexedNotNull { x, c -> if (c == char) Point(x, y) else null }
 }
-
+@JvmName("strIndex")
+fun List<String>.indexOf(item: Char): Point =
+    this.mapIndexedNotNull { y, line -> line.indexOf(item).let { x -> if (x != -1) Point(x, y) else null } }.first()
 
 operator fun <E> List<List<E>>.get(point: Point) = this[point.y][point.x]
 operator fun <E> List<MutableList<E>>.set(point: Point, value: E) {

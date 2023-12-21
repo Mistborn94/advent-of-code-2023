@@ -50,21 +50,92 @@ fun <K> findShortestPathByPredicate(
     return GraphSearchResult(start, endVertex, seenPoints)
 }
 
-class GraphSearchResult<K>(val start: K, val end: K?, private val result: Map<K, SeenVertex<K>>) {
-    fun getScore(vertex: K) = result[vertex]?.cost ?: throw IllegalStateException("Result for $vertex not available")
-    fun getScore() = end?.let { getScore(it) } ?: throw IllegalStateException("No path found")
+fun <K> shortestPathToAll(
+    start: K,
+    neighbours: NeighbourFunction<K>,
+    cost: CostFunction<K> = { _, _ -> 1 }
+): GraphSearchResult<K> {
+    val initialToVisit = listOf(ScoredVertex(start, 0, 0))
+    val seenPoints = shortestPathToAll(initialToVisit, neighbours, cost)
+    return GraphSearchResult(start, seenPoints)
+}
+
+fun <K> shortestPathToAllFromAny(
+    start: Map<K, Int>,
+    neighbours: NeighbourFunction<K>,
+    cost: CostFunction<K> = { _, _ -> 1 },
+): GraphSearchResult<K> {
+    val initialToVisit = start.map { (k, v) -> ScoredVertex(k, v, 0) }
+    val seenPoints = shortestPathToAll(initialToVisit, neighbours, cost)
+    return  GraphSearchResult(start.keys, seenPoints)
+}
+
+private fun <K> shortestPathToAll(
+    initialToVisit: List<ScoredVertex<K>>,
+    neighbours: NeighbourFunction<K>,
+    cost: CostFunction<K>
+): MutableMap<K, SeenVertex<K>> {
+    val toVisit = PriorityQueue(initialToVisit)
+    val seenPoints: MutableMap<K, SeenVertex<K>> = initialToVisit.associateTo(mutableMapOf()) { it.vertex to SeenVertex(it.score, null) }
+
+    while (toVisit.isNotEmpty()) {
+        val (currentVertex, currentScore) = toVisit.remove()
+
+        val nextPoints = neighbours(currentVertex)
+            .filter { it !in seenPoints }
+            .map { next -> ScoredVertex(next, currentScore + cost(currentVertex, next), 0) }
+
+        toVisit.addAll(nextPoints)
+        seenPoints.putAll(nextPoints.associate { it.vertex to SeenVertex(it.score, currentVertex) })
+    }
+    return seenPoints
+}
+
+class GraphSearchResult<K>(val start: Set<K>, val end: K?, val vertices: Map<K, SeenVertex<K>>) {
+
+    constructor(start: K, end: K?, result: Map<K, SeenVertex<K>>): this(setOf(start), end, result)
+    constructor(start: K, result: Map<K, SeenVertex<K>>): this(setOf(start), null, result)
+    constructor(start: Set<K>, result: Map<K, SeenVertex<K>>): this(start, null, result)
+
+    fun getScore(vertex: K): Int = vertices[vertex]?.cost ?: throw IllegalStateException("Result for $vertex not available")
+    fun getScore(): Int = end?.let { getScore(it) } ?: throw IllegalStateException("No path found")
 
     fun getPath() = end?.let { getPath(it, emptyList()) } ?: throw IllegalStateException("No path found")
-    fun seen(): Set<K> = result.keys
+    fun getPath(end: K) = getPath(end, emptyList())
+    fun getVertexInPath(end: K, startCondition: (K) -> Boolean) = getPathItem(end, startCondition) ?: throw IllegalStateException("No path found")
+
+    fun seen(): Set<K> = vertices.keys
     fun end(): K = end ?: throw IllegalStateException("No path found")
 
     private tailrec fun getPath(endVertex: K, pathEnd: List<K>): List<K> {
-        val previous = result[endVertex]?.prev
+        val previous = vertices[endVertex]?.prev
 
         return if (previous == null) {
             listOf(endVertex) + pathEnd
         } else {
             getPath(previous, listOf(endVertex) + pathEnd)
+        }
+    }
+
+    tailrec fun getStart(endVertex: K): K {
+        val previous = vertices[endVertex]?.prev
+
+        return if (previous == null) {
+            endVertex
+        } else {
+            getStart(previous)
+        }
+    }
+
+    private tailrec fun getPathItem(endVertex: K, startCondition: (K) -> Boolean = { it == null}): K? {
+        val previous = vertices[endVertex]?.prev
+
+        return if (previous == null) {
+            null
+        } else if (startCondition(previous)) {
+            previous
+        } else {
+            getPathItem(previous, startCondition)
         }
     }
 }

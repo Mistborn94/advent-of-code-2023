@@ -35,3 +35,7 @@ class Polygon(val points: Collection<Point>) {
         }.absoluteValue / 2
     }
 }
+
+@JvmName("strBounds")
+fun List<String>.bounds(): Rectangle = Rectangle(this[0].indices, this.indices)
+fun <E> List<Collection<E>>.bounds(): Rectangle = Rectangle(this[0].indices, this.indices)
