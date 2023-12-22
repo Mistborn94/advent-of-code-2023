@@ -1,7 +1,6 @@
 package day22
 
 import helper.Debug
-import helper.addAllIf
 import helper.point.Point3D
 import helper.point.RectangleCuboid
 import helper.point.base.Point
@@ -129,13 +128,11 @@ fun solveB(text: String, debug: Debug = Debug.Disabled): Int {
     }
 }
 
-val fallCache = mutableMapOf<RectangleCuboid, Int>()
 fun fallCount(brick: RectangleCuboid, brickSupportData: Map<RectangleCuboid, CubeData>, debug: Debug): Int {
     if (safeToRemove(brickSupportData, brick, debug)) {
         return 0
     } else {
         val fallen = mutableSetOf<RectangleCuboid>()
-        var previouslyEvaluated = 0
         val toVisit = mutableSetOf(brick)
 
         while (toVisit.isNotEmpty()) {
@@ -148,11 +145,8 @@ fun fallCount(brick: RectangleCuboid, brickSupportData: Map<RectangleCuboid, Cub
             }
 
             fallen.add(current)
-            toVisit.addAllIf(willAlsoFall) { it !in fallCache }
-            previouslyEvaluated += willAlsoFall.sumOf { fallCache[it] ?: 0 }
+            toVisit.addAll(willAlsoFall)
         }
-        val answer = fallen.size - 1 + previouslyEvaluated
-        fallCache[brick] = answer
-        return answer
+        return fallen.size - 1
     }
 }
