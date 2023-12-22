@@ -2,8 +2,8 @@ package day22
 
 import helper.Debug
 import helper.addAllIf
-import helper.point.Cube
 import helper.point.Point3D
+import helper.point.RectangleCuboid
 import helper.point.base.Point
 import helper.point.base.Rectangle
 import helper.removeFirst
@@ -12,7 +12,7 @@ import kotlin.math.min
 val translateDown = Point3D(0, 0, -1)
 val translateUp = Point3D(0, 0, 1)
 
-class CubeData(val above: List<Cube>, val below: List<Cube>)
+class CubeData(val above: List<RectangleCuboid>, val below: List<RectangleCuboid>)
 
 fun solveA(text: String, debug: Debug = Debug.Disabled): Int {
     val bricks = parseInput(text)
@@ -29,7 +29,7 @@ fun solveA(text: String, debug: Debug = Debug.Disabled): Int {
     }
 }
 
-private fun getBrickSupportData(finalBrickPositions: List<Cube>) =
+private fun getBrickSupportData(finalBrickPositions: List<RectangleCuboid>) =
     finalBrickPositions.associateWith { cube ->
         val up = cube.translate(translateUp)
         val down = cube.translate(translateDown)
@@ -39,14 +39,14 @@ private fun getBrickSupportData(finalBrickPositions: List<Cube>) =
     }
 
 private fun safeToRemove(
-    brickSupportData: Map<Cube, CubeData>,
-    cube: Cube,
+    brickSupportData: Map<RectangleCuboid, CubeData>,
+    cuboid: RectangleCuboid,
     debug: Debug
 ): Boolean {
-    val cubeData = brickSupportData[cube]!!
+    val cubeData = brickSupportData[cuboid]!!
 
     debug {
-        println("${cube.label}: Is supporting ${cubeData.above.map { it.label }}")
+        println("${cuboid.label}: Is supporting ${cubeData.above.map { it.label }}")
     }
 
     val supportedHasExtraSupport = cubeData.above.all { supported ->
@@ -61,14 +61,14 @@ private fun safeToRemove(
 
     val canBeRemoved = cubeData.above.isEmpty() || supportedHasExtraSupport
     debug {
-        println("${cube.label} Can be removed: $canBeRemoved")
+        println("${cuboid.label} Can be removed: $canBeRemoved")
     }
     return canBeRemoved
 }
 
-private fun makeBricksFall(bricks: List<Cube>): Pair<List<Cube>, Int> {
+private fun makeBricksFall(bricks: List<RectangleCuboid>): Pair<List<RectangleCuboid>, Int> {
     var fallCount = 0
-    val finalBrickPositions = mutableListOf<Cube>()
+    val finalBrickPositions = mutableListOf<RectangleCuboid>()
     bricks.forEach { brick ->
         var current = brick
         var next = current.translate(translateDown)
@@ -87,7 +87,7 @@ private fun makeBricksFall(bricks: List<Cube>): Pair<List<Cube>, Int> {
     return Pair(finalBrickPositions, fallCount)
 }
 
-private fun parseInput(text: String): List<Cube> {
+private fun parseInput(text: String): List<RectangleCuboid> {
     var label = 'A'
     val bricks = text.lines().map {
         val split = it.split(',', '~')
@@ -95,7 +95,7 @@ private fun parseInput(text: String): List<Cube> {
         val pointA = Point3D(split[0].toInt(), split[1].toInt(), split[2].toInt())
         val pointB = Point3D(split[3].toInt(), split[4].toInt(), split[5].toInt())
         pointA to pointB
-    }.sortedBy { min(it.first.z, it.second.z) }.map { (a, b) -> Cube.boundingBoxOf(a, b, "${label++}") }
+    }.sortedBy { min(it.first.z, it.second.z) }.map { (a, b) -> RectangleCuboid.boundingBoxOf(a, b, "${label++}") }
     return bricks
 }
 
@@ -129,25 +129,30 @@ fun solveB(text: String, debug: Debug = Debug.Disabled): Int {
     }
 }
 
-fun fallCount(cube: Cube, brickSupportData: Map<Cube, CubeData>, debug: Debug): Int {
-    if (safeToRemove(brickSupportData, cube, debug)) {
+val fallCache = mutableMapOf<RectangleCuboid, Int>()
+fun fallCount(brick: RectangleCuboid, brickSupportData: Map<RectangleCuboid, CubeData>, debug: Debug): Int {
+    if (safeToRemove(brickSupportData, brick, debug)) {
         return 0
     } else {
-        val fallen = mutableSetOf<Cube>()
-        val toVisit = mutableSetOf(cube)
+        val fallen = mutableSetOf<RectangleCuboid>()
+        var previouslyEvaluated = 0
+        val toVisit = mutableSetOf(brick)
 
         while (toVisit.isNotEmpty()) {
             val current = toVisit.removeFirst()
             val currentSupportData = brickSupportData[current]!!
 
-            val willAlsoFall = currentSupportData.above.filter { supported ->
-                val supportedData = brickSupportData[supported]!!
-                supportedData.below.all { it == current || it in fallen || it in toVisit }
+            val willAlsoFall = currentSupportData.above.filter { above ->
+                val aboveSupportData = brickSupportData[above]!!
+                above !in fallen && above !in toVisit && aboveSupportData.below.all { it == current || it in fallen || it in toVisit }
             }
 
             fallen.add(current)
-            toVisit.addAllIf(willAlsoFall) { it !in fallen }
+            toVisit.addAllIf(willAlsoFall) { it !in fallCache }
+            previouslyEvaluated += willAlsoFall.sumOf { fallCache[it] ?: 0 }
         }
-        return fallen.size - 1
+        val answer = fallen.size - 1 + previouslyEvaluated
+        fallCache[brick] = answer
+        return answer
     }
 }

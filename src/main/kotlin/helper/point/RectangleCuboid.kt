@@ -3,18 +3,21 @@ package helper.point
 import helper.overlaps
 import helper.point.base.Rectangle
 
-data class Cube(val xRange: IntRange, val yRange: IntRange, val zRange: IntRange, val label: String = "") {
+/**
+ * Technically not a cube since its faces aren't forced to be square...
+ */
+data class RectangleCuboid(val xRange: IntRange, val yRange: IntRange, val zRange: IntRange, val label: String = "") {
 
-    fun grow(size: Int = 1): Cube {
-        return Cube(
+    fun grow(size: Int = 1): RectangleCuboid {
+        return RectangleCuboid(
             xRange.first - size..xRange.last + size,
             yRange.first - size..yRange.last + size,
             zRange.first - size..zRange.last + size
         )
     }
 
-    fun translate(offset: Point3D): Cube {
-        return Cube(translateRange(xRange, offset.x), translateRange(yRange, offset.y), translateRange(zRange, offset.z), label)
+    fun translate(offset: Point3D): RectangleCuboid {
+        return RectangleCuboid(translateRange(xRange, offset.x), translateRange(yRange, offset.y), translateRange(zRange, offset.z), label)
     }
 
     private fun translateRange(range: IntRange, offset: Int): IntRange {
@@ -27,7 +30,7 @@ data class Cube(val xRange: IntRange, val yRange: IntRange, val zRange: IntRange
 
     operator fun contains(point: Point3D) = point.x in xRange && point.y in yRange && point.z in zRange
 
-    fun overlaps(other: Cube): Boolean {
+    fun overlaps(other: RectangleCuboid): Boolean {
         return xRange.overlaps(other.xRange) && yRange.overlaps(other.yRange) && zRange.overlaps(other.zRange)
     }
 
@@ -36,7 +39,7 @@ data class Cube(val xRange: IntRange, val yRange: IntRange, val zRange: IntRange
     fun yzView(): Rectangle = Rectangle(yRange, zRange, label)
 
     companion object {
-        fun boundingBoxOf(a: Point3D, b: Point3D, label: String = ""): Cube {
+        fun boundingBoxOf(a: Point3D, b: Point3D, label: String = ""): RectangleCuboid {
             val minY = minOf(a.y, b.y)
             val minX = minOf(a.x, b.x)
             val minZ = minOf(a.z, b.z)
@@ -45,10 +48,10 @@ data class Cube(val xRange: IntRange, val yRange: IntRange, val zRange: IntRange
             val maxX = maxOf(a.x, b.x)
             val maxZ = maxOf(a.z, b.z)
 
-            return Cube(minX..maxX, minY..maxY, minZ..maxZ, label)
+            return RectangleCuboid(minX..maxX, minY..maxY, minZ..maxZ, label)
         }
 
-        fun boundingBoxOf(points: MutableSet<Point3D>): Cube {
+        fun boundingBoxOf(points: MutableSet<Point3D>): RectangleCuboid {
             var minX = Int.MAX_VALUE
             var maxX = Int.MIN_VALUE
 
@@ -69,7 +72,7 @@ data class Cube(val xRange: IntRange, val yRange: IntRange, val zRange: IntRange
                 maxZ = maxOf(maxZ, it.z)
             }
 
-            return Cube(minX..maxX, minY..maxY, minZ..maxZ)
+            return RectangleCuboid(minX..maxX, minY..maxY, minZ..maxZ)
         }
     }
 }
