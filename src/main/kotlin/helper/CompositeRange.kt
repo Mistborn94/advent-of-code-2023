@@ -167,4 +167,7 @@ class CompositeRange<T : Comparable<T>>(
 
 typealias CompositeLongRange = CompositeRange<Long>
 
-
+fun IntRange.overlaps(other: IntRange): Boolean {
+    return this.first <= other.first && other.first <= this.last
+            || other.first < this.first && this.first <= other.last
+}

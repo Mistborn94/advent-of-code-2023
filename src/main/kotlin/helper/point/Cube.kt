@@ -1,6 +1,9 @@
 package helper.point
 
-data class Cube(val xRange: IntRange, val yRange: IntRange, val zRange: IntRange) {
+import helper.overlaps
+import helper.point.base.Rectangle
+
+data class Cube(val xRange: IntRange, val yRange: IntRange, val zRange: IntRange, val label: String = "") {
 
     fun grow(size: Int = 1): Cube {
         return Cube(
@@ -10,9 +13,41 @@ data class Cube(val xRange: IntRange, val yRange: IntRange, val zRange: IntRange
         )
     }
 
+    fun translate(offset: Point3D): Cube {
+        return Cube(offsetRange(xRange, offset.x), offsetRange(yRange, offset.y), offsetRange(zRange, offset.z), label)
+    }
+
+    private fun offsetRange(range: IntRange, offset: Int): IntRange {
+        return if (offset == 0) {
+            range
+        } else {
+            (range.first + offset)..(range.last + offset)
+        }
+    }
+
     operator fun contains(point: Point3D) = point.x in xRange && point.y in yRange && point.z in zRange
 
+    fun overlaps(other: Cube): Boolean {
+        return xRange.overlaps(other.xRange) && yRange.overlaps(other.yRange) && zRange.overlaps(other.zRange)
+    }
+
+    fun xyView(): Rectangle = Rectangle(xRange, yRange, label)
+    fun xzView(): Rectangle = Rectangle(xRange, zRange, label)
+    fun yzView(): Rectangle = Rectangle(yRange, zRange, label)
+
     companion object {
+        fun boundingBoxOf(a: Point3D, b: Point3D, label: String = ""): Cube {
+            val minY = minOf(a.y, b.y)
+            val minX = minOf(a.x, b.x)
+            val minZ = minOf(a.z, b.z)
+
+            val maxY = maxOf(a.y, b.y)
+            val maxX = maxOf(a.x, b.x)
+            val maxZ = maxOf(a.z, b.z)
+
+            return Cube(minX..maxX, minY..maxY, minZ..maxZ, label)
+        }
+
         fun boundingBoxOf(points: MutableSet<Point3D>): Cube {
             var minX = Int.MAX_VALUE
             var maxX = Int.MIN_VALUE

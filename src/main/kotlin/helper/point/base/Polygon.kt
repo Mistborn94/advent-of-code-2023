@@ -3,7 +3,7 @@ package helper.point.base
 import helper.size
 import kotlin.math.absoluteValue
 
-data class Rectangle(val xRange: IntRange, val yRange: IntRange) {
+data class Rectangle(val xRange: IntRange, val yRange: IntRange, val label: String = "") {
     operator fun contains(point: Point) = point.x in xRange && point.y in yRange
 
     fun area(): Int = xRange.size() * yRange.size()
