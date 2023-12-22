@@ -1,28 +1,23 @@
 package day22
 
 import helper.Debug
+import helper.addAllIf
 import helper.point.Cube
 import helper.point.Point3D
 import helper.point.base.Point
 import helper.point.base.Rectangle
+import helper.removeFirst
 import kotlin.math.min
 
 val translateDown = Point3D(0, 0, -1)
 val translateUp = Point3D(0, 0, 1)
 
-class CubeData(val supporting: List<Cube>, val supportedBy: List<Cube>)
+class CubeData(val above: List<Cube>, val below: List<Cube>)
 
 fun solveA(text: String, debug: Debug = Debug.Disabled): Int {
     val bricks = parseInput(text)
     val (finalBrickPositions, _) = makeBricksFall(bricks)
-
-    val brickSupportData = finalBrickPositions.associateWith { cube ->
-        val up = cube.translate(translateUp)
-        val down = cube.translate(translateDown)
-        val supporting = finalBrickPositions.filter { other -> other != cube && other != up && other.overlaps(up) }
-        val supportedBy = finalBrickPositions.filter { other -> other != down && other != cube && other.overlaps(down) }
-        CubeData(supporting, supportedBy)
-    }
+    val brickSupportData = getBrickSupportData(finalBrickPositions)
 
     debug {
         println(printBricks("xz", finalBrickPositions.map { it.xzView() }))
@@ -30,28 +25,45 @@ fun solveA(text: String, debug: Debug = Debug.Disabled): Int {
     }
 
     return finalBrickPositions.count { cube ->
-        val cubeData = brickSupportData[cube]!!
-
-        debug {
-            println("${cube.label}: Is supporting ${cubeData.supporting.map { it.label }}")
-        }
-
-        val supportedHasExtraSupport = cubeData.supporting.all { supported ->
-            val supportedData = brickSupportData[supported]!!
-
-            debug {
-                println("${supported.label} is supported by: ${supportedData.supportedBy.map { it.label }}")
-            }
-
-            supportedData.supportedBy.size > 1
-        }
-
-        val canBeRemoved = cubeData.supporting.isEmpty() || supportedHasExtraSupport
-        debug {
-            println("${cube.label} Can be removed: $canBeRemoved")
-        }
-        canBeRemoved
+        safeToRemove(brickSupportData, cube, debug)
     }
+}
+
+private fun getBrickSupportData(finalBrickPositions: List<Cube>) =
+    finalBrickPositions.associateWith { cube ->
+        val up = cube.translate(translateUp)
+        val down = cube.translate(translateDown)
+        val supporting = finalBrickPositions.filter { other -> other != cube && other != up && other.overlaps(up) }
+        val supportedBy = finalBrickPositions.filter { other -> other != down && other != cube && other.overlaps(down) }
+        CubeData(supporting, supportedBy)
+    }
+
+private fun safeToRemove(
+    brickSupportData: Map<Cube, CubeData>,
+    cube: Cube,
+    debug: Debug
+): Boolean {
+    val cubeData = brickSupportData[cube]!!
+
+    debug {
+        println("${cube.label}: Is supporting ${cubeData.above.map { it.label }}")
+    }
+
+    val supportedHasExtraSupport = cubeData.above.all { supported ->
+        val supportedData = brickSupportData[supported]!!
+
+        debug {
+            println("${supported.label} is supported by: ${supportedData.below.map { it.label }}")
+        }
+
+        supportedData.below.size > 1
+    }
+
+    val canBeRemoved = cubeData.above.isEmpty() || supportedHasExtraSupport
+    debug {
+        println("${cube.label} Can be removed: $canBeRemoved")
+    }
+    return canBeRemoved
 }
 
 private fun makeBricksFall(bricks: List<Cube>): Pair<List<Cube>, Int> {
@@ -89,7 +101,7 @@ private fun parseInput(text: String): List<Cube> {
 
 private fun printBricks(label: String, rectangles: List<Rectangle>): String {
     val yRange = rectangles.maxOf { it.yRange.last } downTo rectangles.minOf { it.yRange.first }
-    val xRange = rectangles.minOf { it.xRange.first } .. rectangles.maxOf { it.xRange.last }
+    val xRange = rectangles.minOf { it.xRange.first }..rectangles.maxOf { it.xRange.last }
 
     return yRange.joinToString(prefix = "$label\n", postfix = "\n---------\n", separator = "\n") { y ->
         xRange.joinToString(separator = "") { x ->
@@ -104,17 +116,38 @@ private fun printBricks(label: String, rectangles: List<Rectangle>): String {
                 "?"
             }
         }
-
     }
 }
 
 fun solveB(text: String, debug: Debug = Debug.Disabled): Int {
     val bricks = parseInput(text)
     val (finalBrickPositions, _) = makeBricksFall(bricks)
+    val brickSupportData = getBrickSupportData(finalBrickPositions)
 
-    return finalBrickPositions.indices.sumOf { i ->
-        val newList = finalBrickPositions.toMutableList().apply { removeAt(i) }
-        val (_, fallCount) = makeBricksFall(newList)
-        fallCount
+    return finalBrickPositions.reversed().sumOf {
+        fallCount(it, brickSupportData, debug)
+    }
+}
+
+fun fallCount(cube: Cube, brickSupportData: Map<Cube, CubeData>, debug: Debug): Int {
+    if (safeToRemove(brickSupportData, cube, debug)) {
+        return 0
+    } else {
+        val fallen = mutableSetOf<Cube>()
+        val toVisit = mutableSetOf(cube)
+
+        while (toVisit.isNotEmpty()) {
+            val current = toVisit.removeFirst()
+            val currentSupportData = brickSupportData[current]!!
+
+            val willAlsoFall = currentSupportData.above.filter { supported ->
+                val supportedData = brickSupportData[supported]!!
+                supportedData.below.all { it == current || it in fallen || it in toVisit }
+            }
+
+            fallen.add(current)
+            toVisit.addAllIf(willAlsoFall) { it !in fallen }
+        }
+        return fallen.size - 1
     }
 }

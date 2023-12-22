@@ -14,10 +14,10 @@ data class Cube(val xRange: IntRange, val yRange: IntRange, val zRange: IntRange
     }
 
     fun translate(offset: Point3D): Cube {
-        return Cube(offsetRange(xRange, offset.x), offsetRange(yRange, offset.y), offsetRange(zRange, offset.z), label)
+        return Cube(translateRange(xRange, offset.x), translateRange(yRange, offset.y), translateRange(zRange, offset.z), label)
     }
 
-    private fun offsetRange(range: IntRange, offset: Int): IntRange {
+    private fun translateRange(range: IntRange, offset: Int): IntRange {
         return if (offset == 0) {
             range
         } else {
