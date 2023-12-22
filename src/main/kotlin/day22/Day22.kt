@@ -141,7 +141,7 @@ fun fallCount(brick: RectangleCuboid, brickSupportData: Map<RectangleCuboid, Cub
 
             val willAlsoFall = currentSupportData.above.filter { above ->
                 val aboveSupportData = brickSupportData[above]!!
-                above !in fallen && above !in toVisit && aboveSupportData.below.all { it == current || it in fallen || it in toVisit }
+                aboveSupportData.below.all { it == current || it in fallen || it in toVisit }
             }
 
             fallen.add(current)
