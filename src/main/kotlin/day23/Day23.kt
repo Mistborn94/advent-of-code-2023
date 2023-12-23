@@ -45,40 +45,34 @@ fun buildGraph(
     start: Point,
     end: Point,
     part1: Boolean
-): Map<Point,Map<Point, Int>> {
-    val graph = mutableMapOf<Point, Map<Point, Int>>()
-    populateIntersection(map, start, end, graph)
-
-    return if (part1) {
-        graph
-    } else {
-        val bidirectionalGraph = mutableMapOf<Point, MutableMap<Point, Int>>()
-        bidirectionalGraph.putAll(graph.mapValues { (_, v) -> v.toMutableMap() })
-        graph.forEach { (start, paths) ->
-            paths.forEach { (end, cost) ->
-                val endAsStart = bidirectionalGraph.getOrPut(end) { mutableMapOf() }
-                endAsStart[start] = cost
-            }
-        }
-        bidirectionalGraph
-    }
+): Map<Point, Map<Point, Int>> {
+    val graph = mutableMapOf<Point, MutableMap<Point, Int>>()
+    populateIntersection(map, start, end, graph, part1)
+    return graph
 }
 
 fun populateIntersection(
     map: List<String>,
-    intersection: Point,
+    current: Point,
     mapEnd: Point,
-    graph: MutableMap<Point, Map<Point, Int>>
+    graph: MutableMap<Point, MutableMap<Point, Int>>,
+    part1: Boolean
 ) {
-    val currentNeighbours = nextPointsA(intersection, map)
+    val currentNeighbours = nextPointsA(current, map)
     val paths = currentNeighbours.mapNotNull {
-        searchUntilIntersection(it, intersection, map, mapEnd)
+        searchUntilIntersection(it, current, map, mapEnd)
     }
-    graph[intersection] = paths.toMap()
+    graph.getOrPut(current) { mutableMapOf() }.putAll(paths.toMap())
 
     paths.forEach { (point, _) ->
         if (point !in graph) {
-            populateIntersection(map, point, mapEnd, graph)
+            populateIntersection(map, point, mapEnd, graph, part1)
+        }
+    }
+
+    if (!part1) {
+        paths.forEach { (end, cost) ->
+            graph.getOrPut(end) { mutableMapOf() }[current] = cost
         }
     }
 }
@@ -105,25 +99,26 @@ fun searchUntilIntersection(
     }
 }
 
-
 fun longestPathDfs(
     graph: Map<Point, Map<Point, Int>>,
-    start: Point,
+    current: Point,
     end: Point,
-    seen: List<Point> = emptyList()
+    seen: MutableMap<Point, Boolean> = graph.mapValuesTo(mutableMapOf()) { false }
 ): Int {
-    return if (start == end) {
+    seen[current] = true
+    val answer = if (current == end) {
         0
     } else {
-        val nextForbidden = seen + start
-        val max = graph[start]!!.maxOfOrNull { (point, cost) ->
-            if (point !in seen) {
-                longestPathDfs(graph, point, end, nextForbidden) + cost
+        val max = graph[current]!!.maxOfOrNull { (point, cost) ->
+            if (!seen.getValue(point)) {
+                longestPathDfs(graph, point, end, seen) + cost
             } else {
                 Int.MIN_VALUE
             }
         } ?: Int.MIN_VALUE
         max
     }
+    seen[current] = false
+    return answer
 }
 
