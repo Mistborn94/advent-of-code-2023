@@ -1,6 +1,6 @@
 package helper.point.base
 
-data class Point(val x: Int, val y: Int) {
+data class Point(val x: Int, val y: Int): Comparable<Point> {
 
     fun abs() = kotlin.math.abs(x) + kotlin.math.abs(y)
 
@@ -48,6 +48,17 @@ data class Point(val x: Int, val y: Int) {
 
     companion object {
         val ZERO = Point(0, 0)
+    }
+
+    override fun compareTo(other: Point): Int {
+        val xComp = this.x.compareTo(other.x)
+        val yComp = this.y.compareTo(other.y)
+
+        return if (xComp != 0) {
+            xComp
+        } else {
+            yComp
+        }
     }
 }
 
