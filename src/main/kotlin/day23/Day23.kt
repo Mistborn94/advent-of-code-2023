@@ -1,6 +1,7 @@
 package day23
 
 import helper.Debug
+import helper.graph.longestPathDfs
 import helper.point.base.Point
 import helper.point.base.contains
 import helper.point.base.get
@@ -62,7 +63,7 @@ fun populateIntersection(
     val paths = currentNeighbours.mapNotNull {
         searchUntilIntersection(it, current, map, mapEnd)
     }
-    graph.getOrPut(current) { mutableMapOf() }.putAll(paths.toMap())
+    graph[current] = paths.toMap(mutableMapOf())
 
     paths.forEach { (point, _) ->
         if (point !in graph) {
@@ -72,7 +73,7 @@ fun populateIntersection(
 
     if (!part1) {
         paths.forEach { (end, cost) ->
-            graph.getOrPut(end) { mutableMapOf() }[current] = cost
+            graph[end]?.put(current, cost)
         }
     }
 }
@@ -98,27 +99,3 @@ fun searchUntilIntersection(
         null
     }
 }
-
-fun longestPathDfs(
-    graph: Map<Point, Map<Point, Int>>,
-    current: Point,
-    end: Point,
-    seen: MutableMap<Point, Boolean> = graph.mapValuesTo(mutableMapOf()) { false }
-): Int {
-    seen[current] = true
-    val answer = if (current == end) {
-        0
-    } else {
-        val max = graph[current]!!.maxOfOrNull { (point, cost) ->
-            if (!seen.getValue(point)) {
-                longestPathDfs(graph, point, end, seen) + cost
-            } else {
-                Int.MIN_VALUE
-            }
-        } ?: Int.MIN_VALUE
-        max
-    }
-    seen[current] = false
-    return answer
-}
-
