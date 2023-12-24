@@ -15,6 +15,7 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
+    implementation("io.github.tudo-aqua:z3-turnkey:4.8.14")
 
     testImplementation(kotlin("test-junit5"))
 }

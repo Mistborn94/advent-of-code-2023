@@ -22,7 +22,7 @@ internal class Day24KtTest {
         """.trimMargin().trimEnd()
 
         assertEquals(2, solveA(text, Debug.Enabled, 7L..27L))
-        assertEquals(0, solveB(text, Debug.Enabled))
+        assertEquals(47, solveB(text, Debug.Enabled))
     }
 
     @Test
@@ -46,8 +46,8 @@ internal class Day24KtTest {
         println("A: $solveA")
         assertEquals(16172, solveA)
 
-        val solveB = solveB(lines)
+        val solveB = solveB(lines, Debug.Disabled)
         println("B: $solveB")
-        assertEquals(0, solveB)
+        assertEquals(600352360036779, solveB)
     }
 }

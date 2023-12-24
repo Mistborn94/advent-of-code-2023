@@ -1,5 +1,7 @@
 package day24
 
+import com.microsoft.z3.Context
+import com.microsoft.z3.IntNum
 import helper.Debug
 import helper.pairwise
 import helper.point.Point3DLong
@@ -13,7 +15,7 @@ fun solveA(
     val hailstones = text.lines().map {
         val (p1, p2, p3, v1, v2, v3) = it.split(" @ ", ", ")
 
-        HailstoneFormula(
+        Hailstone(
             Point3DLong(p1.trim().toLong(), p2.trim().toLong(), p3.trim().toLong()),
             Point3DLong(v1.trim().toLong(), v2.trim().toLong(), v3.trim().toLong())
         )
@@ -31,7 +33,7 @@ private operator fun LongRange.contains(double: Double): Boolean = double >= fir
 
 private operator fun <E> List<E>.component6(): E = this[5]
 
-data class HailstoneFormula(val p: Point3DLong, val v: Point3DLong) {
+data class Hailstone(val p: Point3DLong, val v: Point3DLong) {
     val p0 = Point3DLong(x(0L), y(0L), z(0L))
     val p1 = Point3DLong(x(1L), y(1L), z(1L))
     val slopeXY: Double = (p1.y - p0.y).toDouble() / (p1.x - p0.x)
@@ -41,7 +43,7 @@ data class HailstoneFormula(val p: Point3DLong, val v: Point3DLong) {
     fun yFromX(x: Double) = slopeXY * x + cXY
     fun tFromX(x: Double) = (x - p0.x) / v.x
 
-    fun xyIntersect(other: HailstoneFormula): Pair<Double, Double>? {
+    fun xyIntersect(other: Hailstone): Pair<Double, Double>? {
         if (this.slopeXY == other.slopeXY) {
             return null
         }
@@ -55,10 +57,13 @@ data class HailstoneFormula(val p: Point3DLong, val v: Point3DLong) {
     fun z(t: Long): Long = p.z + t * v.z
 
     fun formulas(i: Int): List<String> {
+        val t = "t$i"
         return listOf(
-            "x + vx * t_{$i} = ${p.x} + ${v.x} * t_{$i}",
-            "y + vy * t_{$i} = ${p.y} + ${v.y} * t_{$i}",
-            "z + vz * t_{$i} = ${p.z} + ${v.z} * t_{$i}"
+            "(declare-const $t Int)",
+            "(assert (>= $t 0))",
+            "(assert (= (+ x (* xv $t)) (+ ${p.x} (* ${v.x} $t))))",
+            "(assert (= (+ y (* yv $t)) (+ ${p.y} (* ${v.y} $t))))",
+            "(assert (= (+ z (* zv $t)) (+ ${p.z} (* ${v.z} $t))))",
         )
     }
 
@@ -71,27 +76,47 @@ data class HailstoneFormula(val p: Point3DLong, val v: Point3DLong) {
 
 fun solveB(text: String, debug: Debug = Debug.Disabled): Long {
 
-    val unknownFormulas = listOf(
-        "x + vx * t",
-        "y + vy * t",
-        "z + vz * t"
-    )
-
     val hailstones = text.lines().map {
         val (p1, p2, p3, v1, v2, v3) = it.split(" @ ", ", ")
 
-        HailstoneFormula(
+        Hailstone(
             Point3DLong(p1.trim().toLong(), p2.trim().toLong(), p3.trim().toLong()),
             Point3DLong(v1.trim().toLong(), v2.trim().toLong(), v3.trim().toLong())
         )
     }
 
-    println("t >= 0")
-    hailstones.forEachIndexed { i, it ->
-        val forumulas = it.formulas(i)
+    val start = listOf(
+        """(declare-const x Int)""",
+        """(declare-const y Int)""",
+        """(declare-const z Int)""",
+        """(declare-const xv Int)""",
+        """(declare-const yv Int)""",
+        """(declare-const zv Int)"""
+    ).joinToString(separator = "\n")
 
-        println(forumulas.joinToString(separator = "\n"))
+    val middle = hailstones.subList(0, 3).flatMapIndexed { i, hailstone ->
+        hailstone.formulas(i)
+    }.joinToString(separator = "\n")
+
+    debug {
+        println("""Z3 Input:""")
+        println(start)
+        println(middle)
     }
 
-    return 0L
+    val context = Context()
+    val boolExprs =
+        context.parseSMTLIB2String("$start$middle", emptyArray(), emptyArray(), emptyArray(), emptyArray())
+    val solver = context.mkSolver()
+
+    solver.add(*boolExprs)
+    solver.check()
+
+    return (solver.model.constDecls.sumOf {
+        if (it.name.toString() in setOf("x", "y", "z")) {
+            (solver.model.getConstInterp(it) as IntNum).getInt64()
+        } else {
+            0L
+        }
+    })
 }
