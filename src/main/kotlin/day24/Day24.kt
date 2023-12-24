@@ -12,20 +12,12 @@ fun solveA(
     intersectRange: LongRange = 200000000000000..400000000000000
 ): Int {
 
-    val hailstones = text.lines().map {
-        val (p1, p2, p3, v1, v2, v3) = it.split(" @ ", ", ")
-
-        Hailstone(
-            Point3DLong(p1.trim().toLong(), p2.trim().toLong(), p3.trim().toLong()),
-            Point3DLong(v1.trim().toLong(), v2.trim().toLong(), v3.trim().toLong())
-        )
-    }
+    val hailstones = parseInput(text)
 
     return hailstones.pairwise(hailstones).count { (a, b) ->
         val intersect = a.xyIntersect(b)
 
-        intersect != null && intersect.first in intersectRange && intersect.second in intersectRange
-                && a.tFromX(intersect.first) > 0 && b.tFromX(intersect.first) > 0
+        intersect != null && a.x(intersect.first) in intersectRange && a.y(intersect.first) in intersectRange
     }
 }
 
@@ -34,29 +26,24 @@ private operator fun LongRange.contains(double: Double): Boolean = double >= fir
 private operator fun <E> List<E>.component6(): E = this[5]
 
 data class Hailstone(val p: Point3DLong, val v: Point3DLong) {
-    val p0 = Point3DLong(x(0L), y(0L), z(0L))
-    val p1 = Point3DLong(x(1L), y(1L), z(1L))
-    val slopeXY: Double = (p1.y - p0.y).toDouble() / (p1.x - p0.x)
+    private val slopeXY: Double = v.y.toDouble() / v.x
+    private val cXY = -slopeXY * p.x + p.y
 
-    val cXY = -slopeXY * p0.x + p0.y
-
-    fun yFromX(x: Double) = slopeXY * x + cXY
-    fun tFromX(x: Double) = (x - p0.x) / v.x
+    fun tFromX(x: Double) = (x - p.x) / v.x
 
     fun xyIntersect(other: Hailstone): Pair<Double, Double>? {
         if (this.slopeXY == other.slopeXY) {
             return null
         }
         val x = (this.cXY - other.cXY) / (other.slopeXY - this.slopeXY)
-        val y = yFromX(x)
-        return x to y
+        return (tFromX(x) to other.tFromX(x)).takeIf { (first, second) -> first >= 0 && second >= 0 }
     }
 
-    fun x(t: Long): Long = p.x + t * v.x
-    fun y(t: Long): Long = p.y + t * v.y
-    fun z(t: Long): Long = p.z + t * v.z
+    fun x(t: Double): Double = p.x + t * v.x
+    fun y(t: Double): Double = p.y + t * v.y
+    fun z(t: Double): Double = p.z + t * v.z
 
-    fun formulas(i: Int): List<String> {
+    fun z3(i: Int): List<String> {
         val t = "t$i"
         return listOf(
             "(declare-const $t Int)",
@@ -70,21 +57,61 @@ data class Hailstone(val p: Point3DLong, val v: Point3DLong) {
     override fun toString(): String {
         return "$p @ $v -- y = ${slopeXY}x + $cXY"
     }
-
-
 }
 
 fun solveB(text: String, debug: Debug = Debug.Disabled): Long {
 
-    val hailstones = text.lines().map {
-        val (p1, p2, p3, v1, v2, v3) = it.split(" @ ", ", ")
+    val hailstones = parseInput(text)
 
-        Hailstone(
-            Point3DLong(p1.trim().toLong(), p2.trim().toLong(), p3.trim().toLong()),
-            Point3DLong(v1.trim().toLong(), v2.trim().toLong(), v3.trim().toLong())
-        )
+    return solveBruteForce(hailstones, debug)
+    return solveZ3(hailstones, debug)
+}
+
+private fun parseInput(text: String) = text.lines().map {
+    val (p1, p2, p3, v1, v2, v3) = it.split(" @ ", ", ")
+
+    Hailstone(
+        Point3DLong(p1.trim().toLong(), p2.trim().toLong(), p3.trim().toLong()),
+        Point3DLong(v1.trim().toLong(), v2.trim().toLong(), v3.trim().toLong())
+    )
+}
+
+fun solveBruteForce(hailstones: List<Hailstone>, debug: Debug): Long {
+    val relevantStones = hailstones.subList(0, 3)
+
+    for (xv in -500L..500) {
+        for (yv in -500L..500) {
+            val xyv = Point3DLong(xv, yv, 0)
+            val xyRays = relevantStones.map { it.copy(v = it.v - xyv) }
+            val intersectAB = xyRays[0].xyIntersect(xyRays[1])
+            val intersectAC = xyRays[0].xyIntersect(xyRays[2])
+
+            if (intersectAB != null && intersectAC != null && intersectAB.first == intersectAC.first) {
+                val ta = intersectAB.first
+                val tb = intersectAB.second
+                val tc = intersectAC.second
+
+                for (zv in -500L..500) {
+                    val zOffset = Point3DLong(0, 0, zv)
+                    val zRays = xyRays.map { it.copy(v = it.v - zOffset) }
+
+                    val zA = zRays[0].z(ta).toLong()
+                    val zB = zRays[1].z(tb).toLong()
+                    val zC = zRays[2].z(tc).toLong()
+                    if (zA == zB && zA == zC) {
+                        val x = xyRays[0].x(ta).toLong()
+                        val y = xyRays[0].y(ta).toLong()
+                        return x + y + zA
+                    }
+                }
+            }
+        }
     }
 
+    throw IllegalArgumentException("No solution found :(")
+}
+
+private fun solveZ3(hailstones: List<Hailstone>, debug: Debug): Long {
     val start = listOf(
         """(declare-const x Int)""",
         """(declare-const y Int)""",
@@ -95,7 +122,7 @@ fun solveB(text: String, debug: Debug = Debug.Disabled): Long {
     ).joinToString(separator = "\n")
 
     val middle = hailstones.subList(0, 3).flatMapIndexed { i, hailstone ->
-        hailstone.formulas(i)
+        hailstone.z3(i)
     }.joinToString(separator = "\n")
 
     debug {
@@ -113,6 +140,9 @@ fun solveB(text: String, debug: Debug = Debug.Disabled): Long {
     solver.check()
 
     return (solver.model.constDecls.sumOf {
+        debug {
+            println(" ${it.name} = ${solver.model.getConstInterp(it)}")
+        }
         if (it.name.toString() in setOf("x", "y", "z")) {
             (solver.model.getConstInterp(it) as IntNum).getInt64()
         } else {
